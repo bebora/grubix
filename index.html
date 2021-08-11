@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grubix - Cube visualizer</title>
+  <link href="css/index.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <div class="sidebar-right">
+    <div class="option-container">
+      <label for="light-select">Light type</label>
+      <select id="light-select">
+        <option value="1" selected>Option 1</option>
+        <option value="2">Option 2</option>
+        <option value="3">Option 3</option>
+      </select>
+    </div>
+    <div class="option-container">
+      <label for="diffuse-select">Diffuse type</label>
+      <select id="diffuse-select">
+        <option value="1" selected>Option 1</option>
+        <option value="2">Option 2</option>
+      </select>
+    </div>
+    <div class="option-container">
+      <label for="specular-select">Specular type</label>
+      <select id="specular-select">
+        <option value="1" selected>Option 1</option>
+        <option value="2">Option 2</option>
+      </select>
+    </div>
+  </div>
+  <div class="left">
+    <canvas id="canvas"></canvas>
+  </div>
+</div>
+<script type="module" src="js/index.js"></script>
+</body>
+</html>
