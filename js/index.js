@@ -1,4 +1,4 @@
-import {expandCanvasToContainer} from "./utils.js";
+import { expandCanvasToContainer } from "./utils.js";
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
