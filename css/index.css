@@ -10,7 +10,7 @@ body, html {
 
 .sidebar-right {
   height: 100%;
-  width: 400px;
+  min-width: 20%;
   float: right;
   background: paleturquoise;
   border-left: solid 1px black;

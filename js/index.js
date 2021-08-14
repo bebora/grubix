@@ -20,6 +20,22 @@ window.addEventListener("resize", () => {
 
 expandCanvasToContainer(canvas, gl);
 
+let sidebarOpen = true;
+document.getElementById("toggle-sidebar").addEventListener("click", (e) =>
+{
+  const parent = e.target.parentElement;
+  if (sidebarOpen) {
+    parent.style.minWidth = "0";
+    parent.style.maxWidth = "50px";
+  }
+  else {
+    parent.style.minWidth = "20%";
+    parent.style.maxWidth = "100%";
+  }
+  sidebarOpen = !sidebarOpen;
+  expandCanvasToContainer(canvas, gl);
+});
+
 const mainTest = async function () {
   const path = window.location.pathname;
   const page = path.split("/").pop();
