@@ -21,8 +21,14 @@ window.addEventListener("resize", () => {
 expandCanvasToContainer(canvas, gl);
 
 const mainTest = async function () {
+  const path = window.location.pathname;
+  const page = path.split("/").pop();
+  const baseDir = window.location.href.replace(page, '');
+  const shaderDir = `${baseDir}shaders/`;
+  const assetDir = `${baseDir}assets/`;
+
   // Load .obj mesh
-  const meshObjStr = await fetchFile("../assets/textureTest.obj");
+  const meshObjStr = await fetchFile(`${assetDir}textureTest.obj`);
   console.log(meshObjStr);
   const meshObj = new OBJ.Mesh(meshObjStr);
 
@@ -32,8 +38,8 @@ const mainTest = async function () {
   const uvCoords = meshObj.textures;
 
   // Load and compile shaders
-  const vertexShaderStr = await fetchFile("../shaders/vs_example.glsl");
-  const fragmentShaderStr = await fetchFile("../shaders/fs_example.glsl");
+  const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
+  const fragmentShaderStr = await fetchFile(`${shaderDir}fs_example.glsl`);
   const program = shaderUtils.createAndCompileShaders(gl, [
     vertexShaderStr,
     fragmentShaderStr,
@@ -105,7 +111,7 @@ const mainTest = async function () {
   const texture = gl.createTexture();
   // Load the texture
   const image = new Image();
-  image.src = "../assets/tex.png";
+  image.src = `${assetDir}/tex.png`;
   image.onload = function (e) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
