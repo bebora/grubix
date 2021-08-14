@@ -10,6 +10,17 @@ const expandCanvasToContainer = function (canvas, gl) {
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 };
 
+/**
+ * Obtain RGB values from hexadecimal notation
+ * @param {string} color color in hexadecimal notation
+ * @return {number[]} array of RGB values between 0 and 1
+ */
+const parseHexColor = (color) => {
+  return color.match(/[A-Za-z0-9]{2}/g).map(function (v) {
+    return parseInt(v, 16) / 255;
+  });
+};
+
 const mathUtils = {
   /**
    * Convert angle from degrees to radians
@@ -668,6 +679,7 @@ const shaderUtils = {
 
 export {
   expandCanvasToContainer,
+  parseHexColor,
   mathUtils,
   transformUtils,
   projectionUtils,

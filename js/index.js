@@ -1,11 +1,15 @@
 import {
   expandCanvasToContainer,
+  parseHexColor,
   fetchFile,
   mathUtils,
   projectionUtils,
   shaderUtils,
 } from "./utils.js";
 import "./webgl-obj-loader.min.js";
+
+const ambientInputElement = document.getElementById("ambient-color");
+let ambientColor = parseHexColor(ambientInputElement.value);
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -21,14 +25,12 @@ window.addEventListener("resize", () => {
 expandCanvasToContainer(canvas, gl);
 
 let sidebarOpen = true;
-document.getElementById("toggle-sidebar").addEventListener("click", (e) =>
-{
+document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
   const parent = e.target.parentElement;
   if (sidebarOpen) {
     parent.style.minWidth = "0";
     parent.style.maxWidth = "50px";
-  }
-  else {
+  } else {
     parent.style.minWidth = "20%";
     parent.style.maxWidth = "100%";
   }
@@ -39,13 +41,12 @@ document.getElementById("toggle-sidebar").addEventListener("click", (e) =>
 const mainTest = async function () {
   const path = window.location.pathname;
   const page = path.split("/").pop();
-  const baseDir = window.location.href.replace(page, '');
+  const baseDir = window.location.href.replace(page, "");
   const shaderDir = `${baseDir}shaders/`;
   const assetDir = `${baseDir}assets/`;
 
   // Load .obj mesh
   const meshObjStr = await fetchFile(`${assetDir}textureTest.obj`);
-  console.log(meshObjStr);
   const meshObj = new OBJ.Mesh(meshObjStr);
 
   const vertices = meshObj.vertices;
@@ -92,6 +93,7 @@ const mainTest = async function () {
   const lightColLocation = gl.getUniformLocation(program, "lightColor");
   const uvAttributeLocation = gl.getAttribLocation(program, "a_uv");
   const textLocation = gl.getUniformLocation(program, "u_texture");
+  const ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
 
   // Setup VAO and buffer data
   const vao = gl.createVertexArray();
@@ -195,6 +197,8 @@ const mainTest = async function () {
 
     gl.uniform3fv(lightColLocation, directionalLightColor);
 
+    gl.uniform3fv(ambientColorLocation, ambientColor);
+
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(textLocation, 0);
@@ -208,5 +212,10 @@ const mainTest = async function () {
 
   drawFrame();
 };
+
+// Options change listeners
+ambientInputElement.addEventListener("input", (e) => {
+  ambientColor = parseHexColor(e.target.value);
+});
 
 await mainTest();
