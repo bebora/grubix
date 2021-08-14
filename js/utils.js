@@ -1,11 +1,13 @@
 /**
- * Expand canvas to fill its parent
+ * Expand canvas to fill its parent and adjust the viewport size
  * @param {HTMLCanvasElement} canvas
+ * @param {WebGL2RenderingContext} gl
  */
-const expandCanvasToContainer = function (canvas) {
+const expandCanvasToContainer = function (canvas, gl) {
   const parent = canvas.parentElement;
   canvas.width = parent.clientWidth;
   canvas.height = parent.clientHeight;
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 };
 
 const mathUtils = {
@@ -20,7 +22,7 @@ const mathUtils = {
 
   /**
    * Obtain 4D identity matrix
-   * @returns {number[]} 4x4 matrix array
+   * @returns {number[]} 4D matrix array
    */
   identityMatrix: function () {
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -28,7 +30,7 @@ const mathUtils = {
 
   /**
    * Obtain 3D identity matrix
-   * @returns {number[]} 3x3 matrix array
+   * @returns {number[]} 3D matrix array
    */
   identityMatrix3: function () {
     return [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -398,7 +400,7 @@ const transformUtils = {
   makeRotateYMatrix: function (a) {
     const out = mathUtils.identityMatrix();
 
-    const adeg = this.degToRad(a);
+    const adeg = mathUtils.degToRad(a);
 
     const c = Math.cos(adeg);
     const s = Math.sin(adeg);
@@ -418,7 +420,7 @@ const transformUtils = {
   makeRotateZMatrix: function (a) {
     const out = mathUtils.identityMatrix();
 
-    const adeg = this.degToRad(a);
+    const adeg = mathUtils.degToRad(a);
     const c = Math.cos(adeg);
     const s = Math.sin(adeg);
 
@@ -518,16 +520,16 @@ const projectionUtils = {
    * @returns {number[]} 4D matrix of the world
    */
   makeWorld: function (tx, ty, tz, rx, ry, rz, s) {
-    const Rx = transformUtils.makeRotateXMatrix(ry);
-    const Ry = transformUtils.makeRotateYMatrix(rx);
+    const Rx = transformUtils.makeRotateXMatrix(rx);
+    const Ry = transformUtils.makeRotateYMatrix(ry);
     const Rz = transformUtils.makeRotateZMatrix(rz);
     const S = transformUtils.makeScaleMatrix(s);
     const T = transformUtils.makeTranslateMatrix(tx, ty, tz);
 
-    let out = this.multiplyMatrices(Rz, S);
-    out = this.multiplyMatrices(Ry, out);
-    out = this.multiplyMatrices(Rx, out);
-    out = this.multiplyMatrices(T, out);
+    let out = mathUtils.multiplyMatrices(Rz, S);
+    out = mathUtils.multiplyMatrices(Ry, out);
+    out = mathUtils.multiplyMatrices(Rx, out);
+    out = mathUtils.multiplyMatrices(T, out);
 
     return out;
   },
@@ -547,8 +549,8 @@ const projectionUtils = {
     const Rx = transformUtils.makeRotateXMatrix(-elev);
     const Ry = transformUtils.makeRotateYMatrix(-ang);
 
-    const tmp = this.multiplyMatrices(Ry, T);
-    const out = this.multiplyMatrices(Rx, tmp);
+    const tmp = mathUtils.multiplyMatrices(Ry, T);
+    const out = mathUtils.multiplyMatrices(Rx, tmp);
 
     return out;
   },
@@ -562,9 +564,9 @@ const projectionUtils = {
    * @returns {number[]} 4D matrix of the perspective
    */
   makePerspective: function (fovy, a, n, f) {
-    const perspective = this.identityMatrix();
+    const perspective = mathUtils.identityMatrix();
 
-    const halfFovyRad = this.degToRad(fovy / 2); // stores {fovy/2} in radiants
+    const halfFovyRad = mathUtils.degToRad(fovy / 2); // stores {fovy/2} in radiants
     const ct = 1.0 / Math.tan(halfFovyRad); // cotangent of {fov/2}
 
     perspective[0] = ct / a;
@@ -578,4 +580,97 @@ const projectionUtils = {
   },
 };
 
-export { expandCanvasToContainer, mathUtils, transformUtils, projectionUtils };
+/**
+ * Fetch file from url
+ * @param {string} url
+ * @returns {null|Promise<string>}
+ */
+const fetchFile = async function (url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    alert(`Network response was not ok. Cannot fetch resource at ${url}`);
+    return null;
+  }
+  const text = await response.text();
+  return text;
+};
+
+const shaderUtils = {
+  /**
+   * Compile shaders and create program
+   * @param {WebGL2RenderingContext} gl
+   * @param {string[]} shaderText array with sources of vertex shader and fragment shader
+   * @returns {*|WebGLProgram}
+   */
+  createAndCompileShaders: function (gl, shaderText) {
+    const vertexShader = this.createShader(gl, gl.VERTEX_SHADER, shaderText[0]);
+    const fragmentShader = this.createShader(
+      gl,
+      gl.FRAGMENT_SHADER,
+      shaderText[1]
+    );
+
+    const program = this.createProgram(gl, vertexShader, fragmentShader);
+
+    return program;
+  },
+
+  /**
+   * Create shader from source text
+   * @param {WebGL2RenderingContext} gl
+   * @param {GLenum} type fragment or vertex
+   * @param {string} source
+   * @returns {WebGLShader}
+   */
+  createShader: function (gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (success) {
+      return shader;
+    } else {
+      if (type === gl.VERTEX_SHADER) {
+        alert("ERROR IN VERTEX SHADER : " + gl.getShaderInfoLog(shader));
+      }
+      if (type === gl.FRAGMENT_SHADER) {
+        alert("ERROR IN FRAGMENT SHADER : " + gl.getShaderInfoLog(shader));
+      }
+      gl.deleteShader(shader);
+      throw "could not compile shader:" + gl.getShaderInfoLog(shader);
+    }
+  },
+
+  /**
+   * Link program from provided shaders
+   * @param {WebGL2RenderingContext} gl
+   * @param {WebGLShader} vertexShader
+   * @param {WebGLShader} fragmentShader
+   * @returns {WebGLProgram|null}
+   */
+  createProgram: function (gl, vertexShader, fragmentShader) {
+    const program = gl.createProgram();
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    const success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (success) {
+      return program;
+    } else {
+      console.log(gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
+      throw `Program failed to link: ${gl.getProgramInfoLog(program)}`;
+    }
+  },
+};
+
+export {
+  expandCanvasToContainer,
+  mathUtils,
+  transformUtils,
+  projectionUtils,
+  fetchFile,
+  shaderUtils,
+};
