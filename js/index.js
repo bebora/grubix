@@ -129,7 +129,7 @@ const mainTest = async function () {
   const texture = gl.createTexture();
   // Load the texture
   const image = new Image();
-  image.src = `${assetDir}/tex.png`;
+  image.src = `${assetDir}/textureTest.png`;
   image.onload = function (e) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
