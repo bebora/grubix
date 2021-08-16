@@ -9,8 +9,20 @@ import {
 import { initializeCube } from "./rubikscube.js";
 import "./webgl-obj-loader.min.js";
 
-const ambientColorInputElement = document.getElementById("ambient-color");
-let ambientColor = parseHexColor(ambientColorInputElement.value);
+const mainAmbientColorInputElement = document.getElementById("ambient-color-up");
+let mainAmbientColor = parseHexColor(mainAmbientColorInputElement.value);
+
+const secondaryAmbientColorInputElement = document.getElementById("ambient-color-down");
+let secondaryAmbientColor = parseHexColor(secondaryAmbientColorInputElement.value);
+
+const ambientAzimuthInputElement = document.getElementById("ambient-azimuth");
+let ambientAzimuth = parseFloat(ambientAzimuthInputElement.value);
+
+const ambientElevationInputElement = document.getElementById("ambient-elevation");
+let ambientElevation = parseFloat(ambientElevationInputElement.value);
+
+const ambientTypeInputElement = document.getElementById("ambient-select");
+let ambientType = parseHexColor(secondaryAmbientColorInputElement.value);
 
 const textureIntensityInputElement = document.getElementById("texture-intensity");
 let textureIntensity = parseFloat(textureIntensityInputElement.value)/100;
@@ -159,7 +171,10 @@ const mainTest = async function () {
   const lightColLocation = gl.getUniformLocation(program, "lightColor");
   const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
   const textLocation = gl.getUniformLocation(program, "u_texture");
-  const ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
+  const mainAmbientColorLocation = gl.getUniformLocation(program, "mainAmbientColor");
+  const secondaryAmbientColorLocation = gl.getUniformLocation(program, "secondaryAmbientColor");
+  const ambientUpVectorLocation = gl.getUniformLocation(program, "ambientUpVector");
+  const ambientTypeLocation = gl.getUniformLocation(program, "ambientType");
 
   for (let i = 0; i < 26; i++) {
     let vao = gl.createVertexArray();
@@ -239,6 +254,14 @@ const mainTest = async function () {
         Math.sin(mathUtils.degToRad(-angle)) *
         Math.cos(mathUtils.degToRad(-elevation));
       cy = lookRadius * Math.sin(mathUtils.degToRad(-elevation));
+
+      const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
+      const ambientUpVector = [
+        ambientInnerRadius * Math.cos(mathUtils.degToRad(ambientAzimuth)),
+        Math.sin(mathUtils.degToRad(ambientElevation)),
+        - ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth))
+      ]
+
       let viewMatrix = projectionUtils.makeView(cx, cy, cz, elevation, -angle);
 
       // Matrix to transform light direction from world to camera space
@@ -264,6 +287,11 @@ const mainTest = async function () {
         viewWorldMatrix
       );
 
+      const cameraSpaceAmbientDirection = mathUtils.multiplyMatrix3Vector3(
+        mathUtils.sub3x3from4x4(lightDirMatrix),
+        ambientUpVector
+      );
+
       gl.uniformMatrix4fv(
         worldViewProjectionMatrixLocation,
         false,
@@ -283,7 +311,13 @@ const mainTest = async function () {
 
       gl.uniform3fv(lightColLocation, directionalLightColor);
 
-      gl.uniform3fv(ambientColorLocation, ambientColor);
+      gl.uniform3fv(mainAmbientColorLocation, mainAmbientColor);
+
+      gl.uniform3fv(secondaryAmbientColorLocation, secondaryAmbientColor);
+
+      gl.uniform3fv(ambientUpVectorLocation, cameraSpaceAmbientDirection);
+
+      gl.uniform1i(ambientTypeLocation, ambientType);
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -306,8 +340,20 @@ const mainTest = async function () {
 };
 
 // Options change listeners
-ambientColorInputElement.addEventListener("input", (e) => {
-  ambientColor = parseHexColor(e.target.value);
+mainAmbientColorInputElement.addEventListener("input", (e) => {
+  mainAmbientColor = parseHexColor(e.target.value);
+});
+secondaryAmbientColorInputElement.addEventListener("input", (e) => {
+  secondaryAmbientColor = parseHexColor(e.target.value);
+});
+ambientTypeInputElement.addEventListener("input", (e) => {
+  ambientType = parseInt(e.target.value);
+})
+ambientAzimuthInputElement.addEventListener("input", (e) => {
+  ambientAzimuth = parseFloat(e.target.value);
+});
+ambientElevationInputElement.addEventListener("input", (e) => {
+  ambientElevation = parseFloat(e.target.value);
 });
 textureIntensityInputElement.addEventListener("input", (e) => {
   textureIntensity = parseFloat(e.target.value)/100;
