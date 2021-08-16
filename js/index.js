@@ -6,7 +6,15 @@ import {
   projectionUtils,
   shaderUtils,
 } from "./utils.js";
+import { initializeCube } from "./rubikscube.js";
 import "./webgl-obj-loader.min.js";
+
+var cx = 4.5;
+var cy = 0.0;
+var cz = 10.0;
+var elevation = 0.0;
+var angle = 0.0;
+var lookRadius = 5.0;
 
 const ambientInputElement = document.getElementById("ambient-color");
 let ambientColor = parseHexColor(ambientInputElement.value);
@@ -38,21 +46,58 @@ document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
   expandCanvasToContainer(canvas, gl);
 });
 
+var mouseState = false;
+var lastMouseX = -100,
+  lastMouseY = -100;
+function doMouseDown(event) {
+  lastMouseX = event.pageX;
+  lastMouseY = event.pageY;
+  mouseState = true;
+}
+function doMouseUp(event) {
+  lastMouseX = -100;
+  lastMouseY = -100;
+  mouseState = false;
+}
+function doMouseMove(event) {
+  if (mouseState) {
+    var dx = event.pageX - lastMouseX;
+    var dy = lastMouseY - event.pageY;
+    lastMouseX = event.pageX;
+    lastMouseY = event.pageY;
+
+    if (dx != 0 || dy != 0) {
+      angle = angle + 0.5 * dx;
+      elevation = elevation + 0.5 * dy;
+    }
+  }
+}
+
 const mainTest = async function () {
+  let cube = await initializeCube();
+
+  var keyFunction = function (e) {
+    if (e.keyCode == 49) {
+      cube.move("R", true);
+    } else if (e.keyCode == 50) {
+      cube.move("R", false);
+    } else if (e.keyCode == 51) {
+      cube.move("U", true);
+    } else if (e.keyCode == 52) {
+      cube.move("U", false);
+    }
+  };
+  window.addEventListener("keyup", keyFunction, false);
+
+  window.addEventListener("mousedown", doMouseDown, false);
+  window.addEventListener("mouseup", doMouseUp, false);
+  window.addEventListener("mousemove", doMouseMove, false);
+
   const path = window.location.pathname;
   const page = path.split("/").pop();
   const baseDir = window.location.href.replace(page, "");
   const shaderDir = `${baseDir}shaders/`;
   const assetDir = `${baseDir}assets/`;
-
-  // Load .obj mesh
-  const meshObjStr = await fetchFile(`${assetDir}textureTest.obj`);
-  const meshObj = new OBJ.Mesh(meshObjStr);
-
-  const vertices = meshObj.vertices;
-  const normals = meshObj.vertexNormals;
-  const indices = meshObj.indices;
-  const uvCoords = meshObj.textures;
 
   // Load and compile shaders
   const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
@@ -66,7 +111,7 @@ const mainTest = async function () {
   // Shader and viewport variables
   const diffColor = [254.0 / 255.0, 156.0 / 255.0, 244.0 / 255.0];
   const directionalLightColor = [1.0, 1.0, 1.0];
-  let angle = 0;
+  //let angle = 0;
 
   //define directional light
   const dirLightAlpha = -mathUtils.degToRad(40);
@@ -95,42 +140,49 @@ const mainTest = async function () {
   const textLocation = gl.getUniformLocation(program, "u_texture");
   const ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
 
-  // Setup VAO and buffer data
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
+  for (let i = 0; i < 26; i++) {
+    let vao = gl.createVertexArray();
+    cube.pieceArray[i].vao = vao;
+    gl.bindVertexArray(vao);
 
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(positionAttributeLocation);
-  gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+    let vertices = cube.pieceArray[i].vertices;
+    let normals = cube.pieceArray[i].normals;
+    let indices = cube.pieceArray[i].indices;
+    let uvCoords = cube.pieceArray[i].textures;
 
-  const normalsBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(normalsAttributeLocation);
-  gl.vertexAttribPointer(normalsAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+    let positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
 
-  const indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array(indices),
-    gl.STATIC_DRAW
-  );
+    const normalsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(normalsAttributeLocation);
+    gl.vertexAttribPointer(normalsAttributeLocation, 3, gl.FLOAT, false, 0, 0);
 
-  const uvBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvCoords), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(uvAttributeLocation);
-  gl.vertexAttribPointer(uvAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(indices),
+      gl.STATIC_DRAW
+    );
+
+    const uvBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvCoords), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(uvAttributeLocation);
+    gl.vertexAttribPointer(uvAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+  }
 
   // Create texture
-  const texture = gl.createTexture();
+  var texture = gl.createTexture();
   // Load the texture
-  const image = new Image();
-  image.src = `${assetDir}/textureTest.png`;
-  image.onload = function (e) {
+  var image = new Image();
+  image.src = `${assetDir}/customCubeTexture.png`;
+  image.onload = function () {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -140,72 +192,88 @@ const mainTest = async function () {
     gl.generateMipmap(gl.TEXTURE_2D);
   };
 
-  function drawFrame() {
-    angle += 0.5;
-    const worldMatrix = projectionUtils.makeWorld(
-      0,
-      Math.sin(angle / 10) / 10,
-      0,
-      0.0,
-      angle,
-      0.0,
-      0.25
-    );
-    const perspectiveMatrix = projectionUtils.makePerspective(
-      110,
-      gl.canvas.width / gl.canvas.height,
-      0.1,
-      100.0
-    );
-    const viewMatrix = projectionUtils.makeView(0, 1, 3.0, -30.0, 0.0);
+  let perspectiveMatrix = projectionUtils.makePerspective(
+    110,
+    gl.canvas.width / gl.canvas.height,
+    0.1,
+    100.0
+  );
 
+  function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const viewWorldMatrix = mathUtils.multiplyMatrices(viewMatrix, worldMatrix);
-    const projectionMatrix = mathUtils.multiplyMatrices(
-      perspectiveMatrix,
-      viewWorldMatrix
-    );
+    for (let i = 0; i < 26; i++) {
+      let worldMatrix = mathUtils.multiplyMatrices(
+        projectionUtils.makeWorld(0, 0, 0, 0.0, 0, 0.0, 0.25),
+        cube.pieceArray[i].worldMatrix
+      );
 
-    // Matrix to transform light direction from world to camera space
-    const lightDirMatrix = mathUtils.invertMatrix(
-      mathUtils.transposeMatrix(viewMatrix)
-    );
-    // Inverse transpose of the world view matrix for the normals
-    const normalMatrix = mathUtils.invertMatrix(
-      mathUtils.transposeMatrix(viewWorldMatrix)
-    );
-    // Directional light transformed by the 3x3 submatrix
-    const directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
-      mathUtils.sub3x3from4x4(lightDirMatrix),
-      directionalLight
-    );
+      cz =
+        lookRadius *
+        Math.cos(mathUtils.degToRad(-angle)) *
+        Math.cos(mathUtils.degToRad(-elevation));
+      cx =
+        lookRadius *
+        Math.sin(mathUtils.degToRad(-angle)) *
+        Math.cos(mathUtils.degToRad(-elevation));
+      cy = lookRadius * Math.sin(mathUtils.degToRad(-elevation));
+      let viewMatrix = projectionUtils.makeView(cx, cy, cz, elevation, -angle);
 
-    gl.uniformMatrix4fv(
-      matrixLocation,
-      false,
-      mathUtils.transposeMatrix(projectionMatrix)
-    );
-    gl.uniformMatrix4fv(
-      nMatrixLocation,
-      false,
-      mathUtils.transposeMatrix(normalMatrix)
-    );
-    gl.uniform3fv(diffColorLocation, diffColor);
+      // Matrix to transform light direction from world to camera space
+      let lightDirMatrix = mathUtils.invertMatrix(
+        mathUtils.transposeMatrix(viewMatrix)
+      );
 
-    gl.uniform3fv(lightDirLocation, directionalLightTransformed);
+      // Directional light transformed by the 3x3 submatrix
+      let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
+        mathUtils.sub3x3from4x4(lightDirMatrix),
+        directionalLight
+      );
 
-    gl.uniform3fv(lightColLocation, directionalLightColor);
+      let viewWorldMatrix = mathUtils.multiplyMatrices(viewMatrix, worldMatrix);
 
-    gl.uniform3fv(ambientColorLocation, ambientColor);
+      // Inverse transpose of the world view matrix for the normals
+      let normalMatrix = mathUtils.invertMatrix(
+        mathUtils.transposeMatrix(viewWorldMatrix)
+      );
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(textLocation, 0);
+      let projectionMatrix = mathUtils.multiplyMatrices(
+        perspectiveMatrix,
+        viewWorldMatrix
+      );
 
-    // Bind VAO to obtain buffers set outside of the rendering loop
-    gl.bindVertexArray(vao);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+      gl.uniformMatrix4fv(
+        matrixLocation,
+        false,
+        mathUtils.transposeMatrix(projectionMatrix)
+      );
+      gl.uniformMatrix4fv(
+        nMatrixLocation,
+        false,
+        mathUtils.transposeMatrix(normalMatrix)
+      );
+
+      gl.uniform3fv(diffColorLocation, diffColor);
+
+      gl.uniform3fv(lightDirLocation, directionalLightTransformed);
+
+      gl.uniform3fv(lightColLocation, directionalLightColor);
+
+      gl.uniform3fv(ambientColorLocation, ambientColor);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform1i(textLocation, 0);
+
+      // Bind VAO to obtain buffers set outside of the rendering loop
+      gl.bindVertexArray(cube.pieceArray[i].vao);
+      gl.drawElements(
+        gl.TRIANGLES,
+        cube.pieceArray[i].indices.length,
+        gl.UNSIGNED_SHORT,
+        0
+      );
+    }
 
     window.requestAnimationFrame(drawFrame);
   }
