@@ -317,7 +317,8 @@ materialDiffuseColorInputElement.addEventListener("input", (e) => {
 });
 canvas.addEventListener("wheel", (event) => {
   event.preventDefault();
-  lookRadius += event.deltaY * -.001;
+  const increment = event.deltaY * -.0005 * lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
+  lookRadius = Math.min(Math.max(lookRadius + increment, 1.25), 20);
 })
 
 await mainTest();
