@@ -18,12 +18,12 @@ let textureIntensity = parseFloat(textureIntensityInputElement.value)/100;
 const materialDiffuseColorInputElement = document.getElementById("material-color");
 let materialDiffuseColor = parseHexColor(materialDiffuseColorInputElement.value);
 
-var cx = 4.5;
-var cy = 0.0;
-var cz = 10.0;
-var elevation = 0.0;
-var angle = 0.0;
-var lookRadius = 2.5;
+let cx = 4.5;
+let cy = 0.0;
+let cz = 10.0;
+let elevation = 0.0;
+let angle = 0.0;
+let lookRadius = 2.5;
 
 
 const canvas = document.getElementById("canvas");
@@ -53,27 +53,37 @@ document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
   expandCanvasToContainer(canvas, gl);
 });
 
-var mouseState = false;
-var lastMouseX = -100,
+let mouseState = false;
+let lastMouseX = -100,
   lastMouseY = -100;
+
+/**
+ * @param {MouseEvent} event
+ */
 function doMouseDown(event) {
   lastMouseX = event.pageX;
   lastMouseY = event.pageY;
   mouseState = true;
 }
+/**
+ * @param {MouseEvent} event
+ */
 function doMouseUp(event) {
   lastMouseX = -100;
   lastMouseY = -100;
   mouseState = false;
 }
+/**
+ * @param {MouseEvent} event
+ */
 function doMouseMove(event) {
   if (mouseState) {
-    var dx = event.pageX - lastMouseX;
-    var dy = lastMouseY - event.pageY;
+    const dx = event.pageX - lastMouseX;
+    const dy = lastMouseY - event.pageY;
     lastMouseX = event.pageX;
     lastMouseY = event.pageY;
 
-    if (dx != 0 || dy != 0) {
+    if (dx !== 0 || dy !== 0) {
       angle = angle + 0.5 * dx;
       elevation = elevation + 0.5 * dy;
     }
@@ -81,16 +91,26 @@ function doMouseMove(event) {
 }
 
 const mainTest = async function () {
-  let cube = await initializeCube();
+  const path = window.location.pathname;
+  const page = path.split("/").pop();
+  const baseDir = window.location.href.replace(page, "");
+  const shaderDir = `${baseDir}shaders/`;
+  const assetDir = `${baseDir}assets/`;
 
-  var keyFunction = function (e) {
-    if (e.keyCode == 49) {
+  let cube = await initializeCube(assetDir);
+
+  /**
+   * Handle keyboard input
+   * @param {KeyboardEvent} e
+   */
+  const keyFunction = function (e) {
+    if (e.code === "Digit1") {
       cube.move("R", true);
-    } else if (e.keyCode == 50) {
+    } else if (e.code === "Digit2") {
       cube.move("R", false);
-    } else if (e.keyCode == 51) {
+    } else if (e.code === "Digit3") {
       cube.move("U", true);
-    } else if (e.keyCode == 52) {
+    } else if (e.code === "Digit4") {
       cube.move("U", false);
     }
   };
@@ -99,12 +119,6 @@ const mainTest = async function () {
   canvas.addEventListener("mousedown", doMouseDown, false);
   canvas.addEventListener("mouseup", doMouseUp, false);
   canvas.addEventListener("mousemove", doMouseMove, false);
-
-  const path = window.location.pathname;
-  const page = path.split("/").pop();
-  const baseDir = window.location.href.replace(page, "");
-  const shaderDir = `${baseDir}shaders/`;
-  const assetDir = `${baseDir}assets/`;
 
   // Load and compile shaders
   const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
@@ -185,9 +199,9 @@ const mainTest = async function () {
   }
 
   // Create texture
-  var texture = gl.createTexture();
+  const texture = gl.createTexture();
   // Load the texture
-  var image = new Image();
+  const image = new Image();
   image.src = `${assetDir}/customCubeTexture.png`;
   image.onload = function () {
     gl.activeTexture(gl.TEXTURE0);

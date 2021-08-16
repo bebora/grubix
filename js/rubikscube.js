@@ -13,14 +13,15 @@ class Piece {
   }
 }
 
-async function initializePieces() {
+/**
+ * Initialize every piece of the cube
+ * @param {string} assetDir
+ * @return {Promise<*[]>}
+ */
+async function initializePieces(assetDir) {
   let pieceArray = [];
   // qui importo gli obj, per ogni obj faccio un oggetto Piece
   // dentro ogni Piece memorizzo vertici, normali, indici e uv
-  const path = window.location.pathname;
-  const page = path.split("/").pop();
-  const baseDir = window.location.href.replace(page, "");
-  const assetDir = `${baseDir}assets/`;
   for (let id = 0; id < 26; id++) {
     let meshObjStr = await fetchFile(`${assetDir}piece${id}.obj`);
     let meshObj = new OBJ.Mesh(meshObjStr);
@@ -55,6 +56,13 @@ function initializeSlots(pieceArray) {
 }
 
 class Face {
+  /**
+   * @param {string} name
+   * @param {number[]} slotsID indices of slots contained in the face
+   * @param {number[]} slotArray all the existing slots
+   * @param {number[]} cwMatrix clockwise rotation 4D matrix
+   * @param {number[]} ccwMatrix counter clockwise rotation 4D matrix
+   */
   constructor(name, slotsID, slotArray, cwMatrix, ccwMatrix) {
     this.name = name;
     this.slots = slotsID.map((x) => slotArray[x]);
@@ -205,9 +213,14 @@ class RubiksCube {
   }
 }
 
-async function initializeCube() {
+/**
+ * Initialize cube
+ * @param {string} assetDir
+ * @return {Promise<RubiksCube>}
+ */
+async function initializeCube(assetDir) {
   let rubiksCube = new RubiksCube();
-  rubiksCube.pieceArray = await initializePieces();
+  rubiksCube.pieceArray = await initializePieces(assetDir);
   rubiksCube.slotArray = initializeSlots(rubiksCube.pieceArray);
   rubiksCube.faces = initializeFaces(rubiksCube.slotArray);
   return rubiksCube;
