@@ -9,6 +9,15 @@ import {
 import { initializeCube } from "./rubikscube.js";
 import "./webgl-obj-loader.min.js";
 
+const ambientColorInputElement = document.getElementById("ambient-color");
+let ambientColor = parseHexColor(ambientColorInputElement.value);
+
+const textureIntensityInputElement = document.getElementById("texture-intensity");
+let textureIntensity = parseFloat(textureIntensityInputElement.value)/100;
+
+const materialDiffuseColorInputElement = document.getElementById("material-color");
+let materialDiffuseColor = parseHexColor(materialDiffuseColorInputElement.value);
+
 var cx = 4.5;
 var cy = 0.0;
 var cz = 10.0;
@@ -127,13 +136,14 @@ const mainTest = async function () {
 
   // Obtain locations of attributes and uniforms
   const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-  const normalsAttributeLocation = gl.getAttribLocation(program, "a_normal");
-  const matrixLocation = gl.getUniformLocation(program, "matrix");
-  const nMatrixLocation = gl.getUniformLocation(program, "nMatrix");
-  const diffColorLocation = gl.getUniformLocation(program, "mDiffColor");
+  const normalAttributeLocation = gl.getAttribLocation(program, "a_normal");
+  const worldViewProjectionMatrixLocation = gl.getUniformLocation(program, "worldViewProjectionMatrix");
+  const normalMatrixLocation = gl.getUniformLocation(program, "normalMatrix");
+  const textureIntensityLocation = gl.getUniformLocation(program, "textureIntensity");
+  const materialDiffuseColorLocation = gl.getUniformLocation(program, "materialDiffuseColor");
   const lightDirLocation = gl.getUniformLocation(program, "lightDirection");
   const lightColLocation = gl.getUniformLocation(program, "lightColor");
-  const uvAttributeLocation = gl.getAttribLocation(program, "a_uv");
+  const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
   const textLocation = gl.getUniformLocation(program, "u_texture");
   const ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
 
@@ -156,8 +166,8 @@ const mainTest = async function () {
     const normalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(normalsAttributeLocation);
-    gl.vertexAttribPointer(normalsAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalAttributeLocation);
+    gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0);
 
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -241,17 +251,19 @@ const mainTest = async function () {
       );
 
       gl.uniformMatrix4fv(
-        matrixLocation,
+        worldViewProjectionMatrixLocation,
         false,
         mathUtils.transposeMatrix(projectionMatrix)
       );
       gl.uniformMatrix4fv(
-        nMatrixLocation,
+        normalMatrixLocation,
         false,
         mathUtils.transposeMatrix(normalMatrix)
       );
 
-      gl.uniform3fv(diffColorLocation, diffColor);
+      gl.uniform1f(textureIntensityLocation, textureIntensity);
+
+      gl.uniform3fv(materialDiffuseColorLocation, materialDiffuseColor);
 
       gl.uniform3fv(lightDirLocation, directionalLightTransformed);
 
@@ -280,8 +292,14 @@ const mainTest = async function () {
 };
 
 // Options change listeners
-ambientInputElement.addEventListener("input", (e) => {
+ambientColorInputElement.addEventListener("input", (e) => {
   ambientColor = parseHexColor(e.target.value);
+});
+textureIntensityInputElement.addEventListener("input", (e) => {
+  textureIntensity = parseFloat(e.target.value)/100;
+});
+materialDiffuseColorInputElement.addEventListener("input", (e) => {
+  materialDiffuseColor = parseHexColor(e.target.value);
 });
 
 await mainTest();
