@@ -23,7 +23,7 @@ var cy = 0.0;
 var cz = 10.0;
 var elevation = 0.0;
 var angle = 0.0;
-var lookRadius = 5.0;
+var lookRadius = 2.5;
 
 
 const canvas = document.getElementById("canvas");
@@ -204,7 +204,7 @@ const mainTest = async function () {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     let perspectiveMatrix = projectionUtils.makePerspective(
-      110,
+      90,
       gl.canvas.width / gl.canvas.height,
       0.1,
       100.0
@@ -301,5 +301,9 @@ textureIntensityInputElement.addEventListener("input", (e) => {
 materialDiffuseColorInputElement.addEventListener("input", (e) => {
   materialDiffuseColor = parseHexColor(e.target.value);
 });
+canvas.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  lookRadius += event.deltaY * -.001;
+})
 
 await mainTest();
