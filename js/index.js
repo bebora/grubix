@@ -16,8 +16,6 @@ var elevation = 0.0;
 var angle = 0.0;
 var lookRadius = 5.0;
 
-const ambientInputElement = document.getElementById("ambient-color");
-let ambientColor = parseHexColor(ambientInputElement.value);
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -89,9 +87,9 @@ const mainTest = async function () {
   };
   window.addEventListener("keyup", keyFunction, false);
 
-  window.addEventListener("mousedown", doMouseDown, false);
-  window.addEventListener("mouseup", doMouseUp, false);
-  window.addEventListener("mousemove", doMouseMove, false);
+  canvas.addEventListener("mousedown", doMouseDown, false);
+  canvas.addEventListener("mouseup", doMouseUp, false);
+  canvas.addEventListener("mousemove", doMouseMove, false);
 
   const path = window.location.pathname;
   const page = path.split("/").pop();
@@ -109,7 +107,6 @@ const mainTest = async function () {
   gl.useProgram(program);
 
   // Shader and viewport variables
-  const diffColor = [254.0 / 255.0, 156.0 / 255.0, 244.0 / 255.0];
   const directionalLightColor = [1.0, 1.0, 1.0];
   //let angle = 0;
 
@@ -192,15 +189,16 @@ const mainTest = async function () {
     gl.generateMipmap(gl.TEXTURE_2D);
   };
 
-  let perspectiveMatrix = projectionUtils.makePerspective(
-    110,
-    gl.canvas.width / gl.canvas.height,
-    0.1,
-    100.0
-  );
 
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    let perspectiveMatrix = projectionUtils.makePerspective(
+      110,
+      gl.canvas.width / gl.canvas.height,
+      0.1,
+      100.0
+    );
 
     for (let i = 0; i < 26; i++) {
       let worldMatrix = mathUtils.multiplyMatrices(
