@@ -226,7 +226,7 @@ async function initializeCube(assetDir) {
   return rubiksCube;
 }
 
-export { initializeCube };
+export { initializeCube, RubiksCube };
 /*
     esempio:
 

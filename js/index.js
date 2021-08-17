@@ -7,6 +7,7 @@ import {
   shaderUtils,
 } from "./utils.js";
 import { initializeCube } from "./rubikscube.js";
+import { InputHandler} from "./input-handling.js";
 import "./webgl-obj-loader.min.js";
 
 const mainAmbientColorInputElement = document.getElementById("ambient-color-up");
@@ -65,42 +66,8 @@ document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
   expandCanvasToContainer(canvas, gl);
 });
 
-let mouseState = false;
-let lastMouseX = -100,
-  lastMouseY = -100;
 
-/**
- * @param {MouseEvent} event
- */
-function doMouseDown(event) {
-  lastMouseX = event.pageX;
-  lastMouseY = event.pageY;
-  mouseState = true;
-}
-/**
- * @param {MouseEvent} event
- */
-function doMouseUp(event) {
-  lastMouseX = -100;
-  lastMouseY = -100;
-  mouseState = false;
-}
-/**
- * @param {MouseEvent} event
- */
-function doMouseMove(event) {
-  if (mouseState) {
-    const dx = event.pageX - lastMouseX;
-    const dy = lastMouseY - event.pageY;
-    lastMouseX = event.pageX;
-    lastMouseY = event.pageY;
 
-    if (dx !== 0 || dy !== 0) {
-      angle = angle + 0.5 * dx;
-      elevation = elevation + 0.5 * dy;
-    }
-  }
-}
 
 const mainTest = async function () {
   const path = window.location.pathname;
@@ -111,26 +78,10 @@ const mainTest = async function () {
 
   let cube = await initializeCube(assetDir);
 
-  /**
-   * Handle keyboard input
-   * @param {KeyboardEvent} e
-   */
-  const keyFunction = function (e) {
-    if (e.code === "Digit1") {
-      cube.move("R", true);
-    } else if (e.code === "Digit2") {
-      cube.move("R", false);
-    } else if (e.code === "Digit3") {
-      cube.move("U", true);
-    } else if (e.code === "Digit4") {
-      cube.move("U", false);
-    }
-  };
-  window.addEventListener("keyup", keyFunction, false);
-
-  canvas.addEventListener("mousedown", doMouseDown, false);
-  canvas.addEventListener("mouseup", doMouseUp, false);
-  canvas.addEventListener("mousemove", doMouseMove, false);
+  const cameraState = {elevation: elevation, angle: angle, lookRadius: lookRadius};
+  // Start listening to user input
+  const inputHandler = new InputHandler(canvas, cube, cameraState);
+  inputHandler.initInputEventListeners();
 
   // Load and compile shaders
   const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
@@ -246,14 +197,14 @@ const mainTest = async function () {
       );
 
       cz =
-        lookRadius *
-        Math.cos(mathUtils.degToRad(-angle)) *
-        Math.cos(mathUtils.degToRad(-elevation));
+        cameraState.lookRadius *
+        Math.cos(mathUtils.degToRad(-cameraState.angle)) *
+        Math.cos(mathUtils.degToRad(-cameraState.elevation));
       cx =
-        lookRadius *
-        Math.sin(mathUtils.degToRad(-angle)) *
-        Math.cos(mathUtils.degToRad(-elevation));
-      cy = lookRadius * Math.sin(mathUtils.degToRad(-elevation));
+        cameraState.lookRadius *
+        Math.sin(mathUtils.degToRad(-cameraState.angle)) *
+        Math.cos(mathUtils.degToRad(-cameraState.elevation));
+      cy = cameraState.lookRadius * Math.sin(mathUtils.degToRad(-cameraState.elevation));
 
       const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
       const ambientUpVector = [
@@ -262,7 +213,7 @@ const mainTest = async function () {
         - ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth))
       ]
 
-      let viewMatrix = projectionUtils.makeView(cx, cy, cz, elevation, -angle);
+      let viewMatrix = projectionUtils.makeView(cx, cy, cz, cameraState.elevation, -cameraState.angle);
 
       // Matrix to transform light direction from world to camera space
       let lightDirMatrix = mathUtils.invertMatrix(
@@ -361,10 +312,6 @@ textureIntensityInputElement.addEventListener("input", (e) => {
 materialDiffuseColorInputElement.addEventListener("input", (e) => {
   materialDiffuseColor = parseHexColor(e.target.value);
 });
-canvas.addEventListener("wheel", (event) => {
-  event.preventDefault();
-  const increment = event.deltaY * -.0005 * lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
-  lookRadius = Math.min(Math.max(lookRadius + increment, 1.25), 20);
-})
+
 
 await mainTest();
