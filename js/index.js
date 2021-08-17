@@ -7,29 +7,38 @@ import {
   shaderUtils,
 } from "./utils.js";
 import { initializeCube } from "./rubikscube.js";
-import { InputHandler} from "./input-handling.js";
+import { InputHandler } from "./input-handling.js";
 import "./webgl-obj-loader.min.js";
 
-const mainAmbientColorInputElement = document.getElementById("ambient-color-up");
+const mainAmbientColorInputElement =
+  document.getElementById("ambient-color-up");
 let mainAmbientColor = parseHexColor(mainAmbientColorInputElement.value);
 
-const secondaryAmbientColorInputElement = document.getElementById("ambient-color-down");
-let secondaryAmbientColor = parseHexColor(secondaryAmbientColorInputElement.value);
+const secondaryAmbientColorInputElement =
+  document.getElementById("ambient-color-down");
+let secondaryAmbientColor = parseHexColor(
+  secondaryAmbientColorInputElement.value
+);
 
 const ambientAzimuthInputElement = document.getElementById("ambient-azimuth");
 let ambientAzimuth = parseFloat(ambientAzimuthInputElement.value);
 
-const ambientElevationInputElement = document.getElementById("ambient-elevation");
+const ambientElevationInputElement =
+  document.getElementById("ambient-elevation");
 let ambientElevation = parseFloat(ambientElevationInputElement.value);
 
 const ambientTypeInputElement = document.getElementById("ambient-select");
 let ambientType = parseHexColor(secondaryAmbientColorInputElement.value);
 
-const textureIntensityInputElement = document.getElementById("texture-intensity");
-let textureIntensity = parseFloat(textureIntensityInputElement.value)/100;
+const textureIntensityInputElement =
+  document.getElementById("texture-intensity");
+let textureIntensity = parseFloat(textureIntensityInputElement.value) / 100;
 
-const materialDiffuseColorInputElement = document.getElementById("material-color");
-let materialDiffuseColor = parseHexColor(materialDiffuseColorInputElement.value);
+const materialDiffuseColorInputElement =
+  document.getElementById("material-color");
+let materialDiffuseColor = parseHexColor(
+  materialDiffuseColorInputElement.value
+);
 
 let cx = 4.5;
 let cy = 0.0;
@@ -37,7 +46,6 @@ let cz = 10.0;
 let elevation = 0.0;
 let angle = 0.0;
 let lookRadius = 2.5;
-
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -66,9 +74,6 @@ document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
   expandCanvasToContainer(canvas, gl);
 });
 
-
-
-
 const mainTest = async function () {
   const path = window.location.pathname;
   const page = path.split("/").pop();
@@ -78,7 +83,12 @@ const mainTest = async function () {
 
   let cube = await initializeCube(assetDir);
 
-  const cameraState = {elevation: elevation, angle: angle, lookRadius: lookRadius};
+  const cameraState = {
+    elevation: elevation,
+    angle: angle,
+    lookRadius: lookRadius,
+  };
+
   // Start listening to user input
   const inputHandler = new InputHandler(canvas, cube, cameraState);
   inputHandler.initInputEventListeners();
@@ -114,17 +124,35 @@ const mainTest = async function () {
   // Obtain locations of attributes and uniforms
   const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   const normalAttributeLocation = gl.getAttribLocation(program, "a_normal");
-  const worldViewProjectionMatrixLocation = gl.getUniformLocation(program, "worldViewProjectionMatrix");
+  const worldViewProjectionMatrixLocation = gl.getUniformLocation(
+    program,
+    "worldViewProjectionMatrix"
+  );
   const normalMatrixLocation = gl.getUniformLocation(program, "normalMatrix");
-  const textureIntensityLocation = gl.getUniformLocation(program, "textureIntensity");
-  const materialDiffuseColorLocation = gl.getUniformLocation(program, "materialDiffuseColor");
+  const textureIntensityLocation = gl.getUniformLocation(
+    program,
+    "textureIntensity"
+  );
+  const materialDiffuseColorLocation = gl.getUniformLocation(
+    program,
+    "materialDiffuseColor"
+  );
   const lightDirLocation = gl.getUniformLocation(program, "lightDirection");
   const lightColLocation = gl.getUniformLocation(program, "lightColor");
   const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
   const textLocation = gl.getUniformLocation(program, "u_texture");
-  const mainAmbientColorLocation = gl.getUniformLocation(program, "mainAmbientColor");
-  const secondaryAmbientColorLocation = gl.getUniformLocation(program, "secondaryAmbientColor");
-  const ambientUpVectorLocation = gl.getUniformLocation(program, "ambientUpVector");
+  const mainAmbientColorLocation = gl.getUniformLocation(
+    program,
+    "mainAmbientColor"
+  );
+  const secondaryAmbientColorLocation = gl.getUniformLocation(
+    program,
+    "secondaryAmbientColor"
+  );
+  const ambientUpVectorLocation = gl.getUniformLocation(
+    program,
+    "ambientUpVector"
+  );
   const ambientTypeLocation = gl.getUniformLocation(program, "ambientType");
 
   for (let i = 0; i < 26; i++) {
@@ -179,7 +207,6 @@ const mainTest = async function () {
     gl.generateMipmap(gl.TEXTURE_2D);
   };
 
-
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -204,16 +231,24 @@ const mainTest = async function () {
         cameraState.lookRadius *
         Math.sin(mathUtils.degToRad(-cameraState.angle)) *
         Math.cos(mathUtils.degToRad(-cameraState.elevation));
-      cy = cameraState.lookRadius * Math.sin(mathUtils.degToRad(-cameraState.elevation));
+      cy =
+        cameraState.lookRadius *
+        Math.sin(mathUtils.degToRad(-cameraState.elevation));
 
       const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
       const ambientUpVector = [
         ambientInnerRadius * Math.cos(mathUtils.degToRad(ambientAzimuth)),
         Math.sin(mathUtils.degToRad(ambientElevation)),
-        - ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth))
-      ]
+        -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
+      ];
 
-      let viewMatrix = projectionUtils.makeView(cx, cy, cz, cameraState.elevation, -cameraState.angle);
+      let viewMatrix = projectionUtils.makeView(
+        cx,
+        cy,
+        cz,
+        cameraState.elevation,
+        -cameraState.angle
+      );
 
       // Matrix to transform light direction from world to camera space
       let lightDirMatrix = mathUtils.invertMatrix(
@@ -299,7 +334,7 @@ secondaryAmbientColorInputElement.addEventListener("input", (e) => {
 });
 ambientTypeInputElement.addEventListener("input", (e) => {
   ambientType = parseInt(e.target.value);
-})
+});
 ambientAzimuthInputElement.addEventListener("input", (e) => {
   ambientAzimuth = parseFloat(e.target.value);
 });
@@ -307,11 +342,10 @@ ambientElevationInputElement.addEventListener("input", (e) => {
   ambientElevation = parseFloat(e.target.value);
 });
 textureIntensityInputElement.addEventListener("input", (e) => {
-  textureIntensity = parseFloat(e.target.value)/100;
+  textureIntensity = parseFloat(e.target.value) / 100;
 });
 materialDiffuseColorInputElement.addEventListener("input", (e) => {
   materialDiffuseColor = parseHexColor(e.target.value);
 });
-
 
 await mainTest();

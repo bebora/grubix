@@ -73,9 +73,12 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
    */
   const doWheel = function (event) {
     event.preventDefault();
-    const increment = event.deltaY * -.0005 * cameraState.lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
-    cameraState.lookRadius = Math.min(Math.max(cameraState.lookRadius + increment, 1.25), 20);
-  }
+    const increment = event.deltaY * -0.0005 * cameraState.lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
+    cameraState.lookRadius = Math.min(
+      Math.max(cameraState.lookRadius + increment, 1.25),
+      20
+    );
+  };
 
   function initInputEventListeners() {
     canvas.addEventListener("mousedown", doMouseDown, false);
