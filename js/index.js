@@ -10,6 +10,27 @@ import { initializeCube } from "./rubikscube.js";
 import { InputHandler } from "./input-handling.js";
 import "./webgl-obj-loader.min.js";
 
+// TODO move to appropriate file this function
+let optionToLightDirection = function (opt) {
+  switch (parseInt(opt)) {
+    case 1:
+      return [0.0, 1.0, 0.0];
+    case 2:
+      return [0.0, -1.0, 0.0];
+    case 3:
+      return [1.0, 0.0, 0.0];
+    case 4:
+      return [-1.0, 0.0, 0.0];
+    case 5:
+      return [0.0, 0.0, 1.0];
+    case 6:
+      return [0.0, 0.0, -1.0];
+  }
+};
+
+const lightDirectionInputElement = document.getElementById("light-dir-select");
+let lightDirection = optionToLightDirection(lightDirectionInputElement.value);
+
 const mainAmbientColorInputElement =
   document.getElementById("ambient-color-up");
 let mainAmbientColor = parseHexColor(mainAmbientColorInputElement.value);
@@ -104,17 +125,6 @@ const mainTest = async function () {
 
   // Shader and viewport variables
   const directionalLightColor = [1.0, 1.0, 1.0];
-  //let angle = 0;
-
-  //define directional light
-  const dirLightAlpha = -mathUtils.degToRad(40);
-  const dirLightBeta = -mathUtils.degToRad(110);
-
-  const directionalLight = [
-    -Math.cos(dirLightAlpha) * Math.cos(dirLightBeta),
-    -Math.sin(dirLightAlpha),
-    -Math.cos(dirLightAlpha) * Math.sin(dirLightBeta),
-  ];
 
   // Clear viewport
   gl.clearColor(0.85, 1.0, 0.85, 1.0);
@@ -128,6 +138,10 @@ const mainTest = async function () {
     program,
     "worldViewProjectionMatrix"
   );
+  const worldViewMatrixLocation = gl.getUniformLocation(
+    program,
+    "worldViewMatrix"
+  );
   const normalMatrixLocation = gl.getUniformLocation(program, "normalMatrix");
   const textureIntensityLocation = gl.getUniformLocation(
     program,
@@ -140,7 +154,13 @@ const mainTest = async function () {
   const lightDirLocation = gl.getUniformLocation(program, "lightDirection");
   const lightColLocation = gl.getUniformLocation(program, "lightColor");
   const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
+  const tangentAttributeLocation = gl.getAttribLocation(program, "a_tangent");
+  const bitangentAttributeLocation = gl.getAttribLocation(
+    program,
+    "a_bitangent"
+  );
   const textLocation = gl.getUniformLocation(program, "u_texture");
+  const normalMapLocation = gl.getUniformLocation(program, "u_normalMap");
   const mainAmbientColorLocation = gl.getUniformLocation(
     program,
     "mainAmbientColor"
@@ -164,6 +184,8 @@ const mainTest = async function () {
     let normals = cube.pieceArray[i].normals;
     let indices = cube.pieceArray[i].indices;
     let uvCoords = cube.pieceArray[i].textures;
+    let tangents = cube.pieceArray[i].tangents;
+    let bitangents = cube.pieceArray[i].bitangents;
 
     let positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -190,6 +212,29 @@ const mainTest = async function () {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvCoords), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(uvAttributeLocation);
     gl.vertexAttribPointer(uvAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+    const tangentBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangents), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(tangentAttributeLocation);
+    gl.vertexAttribPointer(tangentAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+
+    const bitangentBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bitangentBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(bitangents),
+      gl.STATIC_DRAW
+    );
+    gl.enableVertexAttribArray(bitangentAttributeLocation);
+    gl.vertexAttribPointer(
+      bitangentAttributeLocation,
+      3,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
   }
 
   // Create texture
@@ -206,6 +251,29 @@ const mainTest = async function () {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.generateMipmap(gl.TEXTURE_2D);
   };
+
+  // Create normal texture
+  const normalTexture = gl.createTexture();
+  // Load the normal texture
+  const normalImage = new Image();
+  normalImage.src = `${assetDir}/customCubeNormal.png`;
+  normalImage.onload = () =>
+    setTimeout(function () {
+      gl.activeTexture(gl.TEXTURE0 + 1); // TODO The two .activeTexture() may interfere! The timeout is a bad temporary solution
+      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        normalImage
+      );
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.generateMipmap(gl.TEXTURE_2D);
+    }, 500);
 
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -258,7 +326,7 @@ const mainTest = async function () {
       // Directional light transformed by the 3x3 submatrix
       let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
         mathUtils.sub3x3from4x4(lightDirMatrix),
-        directionalLight
+        lightDirection
       );
 
       let viewWorldMatrix = mathUtils.multiplyMatrices(viewMatrix, worldMatrix);
@@ -284,6 +352,11 @@ const mainTest = async function () {
         mathUtils.transposeMatrix(projectionMatrix)
       );
       gl.uniformMatrix4fv(
+        worldViewMatrixLocation,
+        false,
+        mathUtils.transposeMatrix(viewWorldMatrix)
+      );
+      gl.uniformMatrix4fv(
         normalMatrixLocation,
         false,
         mathUtils.transposeMatrix(normalMatrix)
@@ -307,7 +380,11 @@ const mainTest = async function () {
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.activeTexture(gl.TEXTURE0 + 1);
+      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+
       gl.uniform1i(textLocation, 0);
+      gl.uniform1i(normalMapLocation, 1);
 
       // Bind VAO to obtain buffers set outside of the rendering loop
       gl.bindVertexArray(cube.pieceArray[i].vao);
@@ -326,6 +403,9 @@ const mainTest = async function () {
 };
 
 // Options change listeners
+lightDirectionInputElement.addEventListener("input", (e) => {
+  lightDirection = optionToLightDirection(e.target.value);
+});
 mainAmbientColorInputElement.addEventListener("input", (e) => {
   mainAmbientColor = parseHexColor(e.target.value);
 });

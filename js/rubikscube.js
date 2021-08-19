@@ -2,12 +2,14 @@ import { mathUtils, fetchFile, transformUtils } from "./utils.js";
 import "./webgl-obj-loader.min.js";
 
 class Piece {
-  constructor(id, vertices, normals, indices, textures) {
+  constructor(id, vertices, normals, indices, textures, tangents, bitangents) {
     this.id = id;
     this.vertices = vertices;
     this.normals = normals;
     this.indices = indices;
     this.textures = textures;
+    this.tangents = tangents;
+    this.bitangents = bitangents;
     this.worldMatrix = mathUtils.identityMatrix();
     this.vao = null;
   }
@@ -25,13 +27,16 @@ async function initializePieces(assetDir) {
   for (let id = 0; id < 26; id++) {
     let meshObjStr = await fetchFile(`${assetDir}piece${id}.obj`);
     let meshObj = new OBJ.Mesh(meshObjStr);
+    meshObj.calculateTangentsAndBitangents();
     pieceArray.push(
       new Piece(
         id,
         meshObj.vertices,
         meshObj.vertexNormals,
         meshObj.indices,
-        meshObj.textures
+        meshObj.textures,
+        meshObj.tangents,
+        meshObj.bitangents
       )
     );
   }

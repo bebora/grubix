@@ -3,8 +3,12 @@
 precision mediump float;
 
 in vec2 fs_textureCoord;
-
+in vec3 fs_tangent;
+in vec3 fs_bitangent;
+in vec3 fs_position; // TODO use it when necessary. Useless at the moment.
+in mat3 TBN;
 in vec3 fs_normal;
+
 uniform vec3 materialDiffuseColor; //material diffuse color
 uniform vec3 lightDirection; // directional light direction vec
 uniform vec3 lightColor; //directional light color
@@ -15,11 +19,17 @@ uniform int ambientType; // 0 = regular ambient, 1 = hemispheric
 uniform float textureIntensity; // texture intensity that balances texture and diffuse color
 
 uniform sampler2D u_texture;
+uniform sampler2D u_normalMap;
 
 out vec4 outColor;
 
 void main() {
-  vec3 norm = normalize(fs_normal);
+  vec3 normalFromMap = vec3(texture(u_normalMap, fs_textureCoord));
+  vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;
+  vec3 finalNormal = normalize(TBN * adjustedNormal);
+  // vec3 norm = normalize(fs_normal); // TODO use fs_normal if normal map disabled
+  vec3 norm = finalNormal;
+
   vec3 nLightDir = normalize(lightDirection);
   float cosine = clamp(dot(norm, nLightDir), 0.0, 1.0);
 
