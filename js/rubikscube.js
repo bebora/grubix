@@ -192,10 +192,10 @@ function initializeFaces(slotArray) {
     "middle",
     [1, 4, 7, 15, 24, 21, 18, 10],
     slotArray,
-    transformUtils.makeRotateXMatrix(-90),
     transformUtils.makeRotateXMatrix(90),
+    transformUtils.makeRotateXMatrix(-90),
     "x",
-    -1
+    1
   );
   faces["E"] = new Face(
     "equatorial",

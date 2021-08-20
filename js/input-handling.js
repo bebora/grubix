@@ -13,6 +13,8 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
   const canvas = canvasParam;
   const cube = cubeParam;
   const cameraState = cameraStateParam;
+  let cubeActivated = false;
+  let faceToMove = "F";
 
   // Mouse events
   /**
@@ -21,6 +23,8 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
   function doMouseDown(event) {
     lastMouseX = event.pageX;
     lastMouseY = event.pageY;
+    if (lastMouseX < canvas.width / 2) cubeActivated = true;
+    else cubeActivated = false;
     pointerInputState = true;
   }
 
@@ -30,6 +34,7 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
   function doMouseUp(event) {
     lastMouseX = -100;
     lastMouseY = -100;
+    if (cubeActivated) cube.realign(faceToMove);
     pointerInputState = false;
   }
 
@@ -43,9 +48,13 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
       lastMouseX = event.pageX;
       lastMouseY = event.pageY;
 
-      if (dx !== 0 || dy !== 0) {
-        cameraState.angle = cameraState.angle + 0.5 * dx;
-        cameraState.elevation = cameraState.elevation + 0.5 * dy;
+      if (!cubeActivated) {
+        if (dx !== 0 || dy !== 0) {
+          cameraState.angle = cameraState.angle + 0.5 * dx;
+          cameraState.elevation = cameraState.elevation + 0.5 * dy;
+        }
+      } else {
+        cube.turnFaceABit(faceToMove, dx);
       }
     }
   }
@@ -56,7 +65,7 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
    * @param {KeyboardEvent} e
    */
   const keyFunction = function (e) {
-    if (e.code === "Digit1") {
+    /*if (e.code === "Digit1") {
       cube.turnFaceABit("R", 50);
       cube.realign("R");
       //cube.move("R", true);
@@ -72,7 +81,7 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
       cube.turnFaceABit("U", -50);
       cube.realign("U");
       //cube.move("U", false);
-    }
+    } else*/ if ("fblrudmes".includes(e.key)) faceToMove = e.key.toUpperCase();
   };
 
   /**
