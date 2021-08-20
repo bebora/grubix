@@ -398,7 +398,7 @@ const mainTest = async function () {
 
     window.requestAnimationFrame(drawFrame);
   }
-
+  document.getElementById("loading-spinner-container").style.display = "none";
   drawFrame();
 };
 

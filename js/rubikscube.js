@@ -28,10 +28,17 @@ class Piece {
  */
 async function initializePieces(assetDir) {
   let pieceArray = [];
+
+  // Fetch meshes in parallel and process them when they are all ready
+  let promises = [...Array(26).keys()].map((id) =>
+    fetchFile(`${assetDir}piece${id}.obj`)
+  );
+  let meshObjStrings = await Promise.all(promises);
+
   // qui importo gli obj, per ogni obj faccio un oggetto Piece
   // dentro ogni Piece memorizzo vertici, normali, indici e uv
   for (let id = 0; id < 26; id++) {
-    let meshObjStr = await fetchFile(`${assetDir}piece${id}.obj`);
+    let meshObjStr = meshObjStrings[id];
     let meshObj = new OBJ.Mesh(meshObjStr);
     meshObj.calculateTangentsAndBitangents();
     pieceArray.push(
