@@ -57,13 +57,21 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
    */
   const keyFunction = function (e) {
     if (e.code === "Digit1") {
-      cube.move("R", true);
+      cube.turnFaceABit("R", 50);
+      cube.realign("R");
+      //cube.move("R", true);
     } else if (e.code === "Digit2") {
-      cube.move("R", false);
+      cube.turnFaceABit("R", -50);
+      cube.realign("R");
+      //cube.move("R", false);
     } else if (e.code === "Digit3") {
-      cube.move("U", true);
+      cube.turnFaceABit("U", 50);
+      cube.realign("U");
+      //cube.move("U", true);
     } else if (e.code === "Digit4") {
-      cube.move("U", false);
+      cube.turnFaceABit("U", -50);
+      cube.realign("U");
+      //cube.move("U", false);
     }
   };
 
@@ -73,7 +81,7 @@ const InputHandler = function (canvasParam, cubeParam, cameraStateParam) {
    */
   const doWheel = function (event) {
     event.preventDefault();
-    const increment = event.deltaY * -0.0005 * cameraState.lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
+    const increment = event.deltaY * 0.0005 * cameraState.lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
     cameraState.lookRadius = Math.min(
       Math.max(cameraState.lookRadius + increment, 1.25),
       20

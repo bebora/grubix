@@ -1,6 +1,12 @@
 import { mathUtils, fetchFile, transformUtils } from "./utils.js";
 import "./webgl-obj-loader.min.js";
 
+var rotMatrixDict = {
+  x: transformUtils.makeRotateXMatrix,
+  y: transformUtils.makeRotateYMatrix,
+  z: transformUtils.makeRotateZMatrix,
+};
+
 class Piece {
   constructor(id, vertices, normals, indices, textures, tangents, bitangents) {
     this.id = id;
@@ -68,21 +74,33 @@ class Face {
    * @param {number[]} cwMatrix clockwise rotation 4D matrix
    * @param {number[]} ccwMatrix counter clockwise rotation 4D matrix
    */
-  constructor(name, slotsID, slotArray, cwMatrix, ccwMatrix) {
+  constructor(name, slotsID, slotArray, cwMatrix, ccwMatrix, rotAxis, rotDir) {
     this.name = name;
     this.slots = slotsID.map((x) => slotArray[x]);
-    this.cwMatrix = cwMatrix;
-    this.ccwMatrix = ccwMatrix;
-    //console.log(this.slots);
+    this.cwMatrix = rotMatrixDict[rotAxis](rotDir * 90);
+    this.ccwMatrix = rotMatrixDict[rotAxis](-rotDir * 90);
+    this.rotAxis = rotAxis;
+    this.rotDir = rotDir;
+    this.tempAngle = 0;
   }
+  turnABit(angle) {
+    for (let i = 0; i < this.slots.length; i++) {
+      this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
+        rotMatrixDict[this.rotAxis](this.rotDir * angle),
+        this.slots[i].piece.worldMatrix
+      );
+    }
+    this.tempAngle += angle;
+  }
+
   turn(clockwise) {
     if (clockwise) {
-      for (let i = 0; i < this.slots.length; i++) {
-        this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
-          this.cwMatrix,
-          this.slots[i].piece.worldMatrix
-        );
-      }
+      // for (let i = 0; i < this.slots.length; i++) {
+      //   this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
+      //     this.cwMatrix,
+      //     this.slots[i].piece.worldMatrix
+      //   );
+      // }
       let tempC = this.slots[6].piece;
       let tempE = this.slots[7].piece;
       this.slots[6].piece = this.slots[4].piece;
@@ -94,12 +112,12 @@ class Face {
       this.slots[3].piece = this.slots[1].piece;
       this.slots[1].piece = tempE;
     } else {
-      for (let i = 0; i < this.slots.length; i++) {
-        this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
-          this.ccwMatrix,
-          this.slots[i].piece.worldMatrix
-        );
-      }
+      // for (let i = 0; i < this.slots.length; i++) {
+      //   this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
+      //     this.ccwMatrix,
+      //     this.slots[i].piece.worldMatrix
+      //   );
+      // }
       let tempC = this.slots[0].piece;
       let tempE = this.slots[1].piece;
       this.slots[0].piece = this.slots[2].piece;
@@ -121,63 +139,81 @@ function initializeFaces(slotArray) {
     [0, 1, 2, 5, 8, 7, 6, 3, 4],
     slotArray,
     transformUtils.makeRotateYMatrix(-90),
-    transformUtils.makeRotateYMatrix(90)
+    transformUtils.makeRotateYMatrix(90),
+    "y",
+    -1
   );
   faces["D"] = new Face(
     "down",
     [23, 24, 25, 22, 19, 18, 17, 20, 21],
     slotArray,
     transformUtils.makeRotateYMatrix(90),
-    transformUtils.makeRotateYMatrix(-90)
+    transformUtils.makeRotateYMatrix(-90),
+    "y",
+    1
   );
   faces["L"] = new Face(
     "left",
     [0, 3, 6, 14, 23, 20, 17, 9, 12],
     slotArray,
+    transformUtils.makeRotateXMatrix(90),
     transformUtils.makeRotateXMatrix(-90),
-    transformUtils.makeRotateXMatrix(90)
+    "x",
+    1
   );
   faces["R"] = new Face(
     "right",
     [8, 5, 2, 11, 19, 22, 25, 16, 13],
     slotArray,
     transformUtils.makeRotateXMatrix(-90),
-    transformUtils.makeRotateXMatrix(90)
+    transformUtils.makeRotateXMatrix(90),
+    "x",
+    -1
   );
   faces["F"] = new Face(
     "front",
     [6, 7, 8, 16, 25, 24, 23, 14, 15],
     slotArray,
     transformUtils.makeRotateZMatrix(-90),
-    transformUtils.makeRotateZMatrix(90)
+    transformUtils.makeRotateZMatrix(90),
+    "z",
+    -1
   );
   faces["B"] = new Face(
     "back",
     [2, 1, 0, 9, 17, 18, 19, 11, 10],
     slotArray,
     transformUtils.makeRotateZMatrix(90),
-    transformUtils.makeRotateZMatrix(-90)
+    transformUtils.makeRotateZMatrix(-90),
+    "z",
+    1
   );
   faces["M"] = new Face(
     "middle",
     [1, 4, 7, 15, 24, 21, 18, 10],
     slotArray,
     transformUtils.makeRotateXMatrix(-90),
-    transformUtils.makeRotateXMatrix(90)
+    transformUtils.makeRotateXMatrix(90),
+    "x",
+    -1
   );
   faces["E"] = new Face(
     "equatorial",
     [14, 15, 16, 13, 11, 10, 9, 12],
     slotArray,
     transformUtils.makeRotateYMatrix(90),
-    transformUtils.makeRotateYMatrix(-90)
+    transformUtils.makeRotateYMatrix(-90),
+    "y",
+    1
   );
   faces["S"] = new Face(
     "standing",
     [3, 4, 5, 13, 22, 21, 20, 12],
     slotArray,
     transformUtils.makeRotateZMatrix(-90),
-    transformUtils.makeRotateZMatrix(90)
+    transformUtils.makeRotateZMatrix(90),
+    "z",
+    -1
   );
   return faces;
 }
@@ -215,6 +251,38 @@ class RubiksCube {
     this.faces[faceName].turn(clockwise);
     let move = faceName + clockwise ? "" : "'";
     this.cube.move(move);
+  }
+  turnFaceABit(faceName, angle) {
+    this.faces[faceName].turnABit(angle);
+  }
+  realign(faceName) {
+    // first, face must be rotated to the nearest position
+    let face = this.faces[faceName];
+    let tempAngle = face.tempAngle;
+    let roundedRotationAngle = Math.round((tempAngle % 360) / 90) * 90;
+    // ora mi conviene capire se devo andare avanti o indietro, cioè se il mio tempAngle è maggiore o minore del rounded
+    // poi se uso l'animazione, spezzo la differenza in tanti turnABit
+    // senza animazione, ruoto di quella differenza, che deve avere il segno giusto
+    let difference = roundedRotationAngle - tempAngle;
+    face.turnABit(difference);
+
+    if (roundedRotationAngle % 360 != 0) {
+      //cube state and scene graph must be changed
+      let move = faceName;
+      if (roundedRotationAngle == 90 || roundedRotationAngle == -270) {
+        face.turn(true);
+      } else if (roundedRotationAngle == 180 || roundedRotationAngle == -180) {
+        face.turn(true);
+        face.turn(true);
+        move += "2";
+      } else if (roundedRotationAngle == -90 || roundedRotationAngle == 270) {
+        face.turn(false);
+        move += "'";
+      }
+      this.cube.move(move);
+    } // else no move is required
+
+    face.tempAngle = 0;
   }
 }
 
