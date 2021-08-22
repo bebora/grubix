@@ -267,43 +267,42 @@ const mainTest = async function () {
     );
   }
 
+  // Set the image sources
+  const image = new Image();
+  image.src = `${assetDir}/customCubeTexture.png`;
+  const normalImage = new Image();
+  normalImage.src = `${assetDir}/customCubeNormal.png`;
+
   // Create texture
   const texture = gl.createTexture();
   // Load the texture
-  const image = new Image();
-  image.src = `${assetDir}/customCubeTexture.png`;
-  image.onload = function () {
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.generateMipmap(gl.TEXTURE_2D);
-  };
+  await image.decode();
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
 
   // Create normal texture
   const normalTexture = gl.createTexture();
   // Load the normal texture
-  const normalImage = new Image();
-  normalImage.src = `${assetDir}/customCubeNormal.png`;
-  normalImage.onload = () =>
-    setTimeout(function () {
-      gl.activeTexture(gl.TEXTURE0 + 1); // TODO The two .activeTexture() may interfere! The timeout is a bad temporary solution
-      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        normalImage
-      );
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.generateMipmap(gl.TEXTURE_2D);
-    }, 500);
+  await normalImage.decode();
+  gl.activeTexture(gl.TEXTURE0 + 1);
+  gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    normalImage
+  );
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
 
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
