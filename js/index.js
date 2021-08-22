@@ -313,45 +313,60 @@ const mainTest = async function () {
       0.1,
       100.0
     );
+
+    cameraState.cz =
+      cameraState.lookRadius *
+      Math.cos(mathUtils.degToRad(-cameraState.angle)) *
+      Math.cos(mathUtils.degToRad(-cameraState.elevation));
+    cameraState.cx =
+      cameraState.lookRadius *
+      Math.sin(mathUtils.degToRad(-cameraState.angle)) *
+      Math.cos(mathUtils.degToRad(-cameraState.elevation));
+    cameraState.cy =
+      cameraState.lookRadius *
+      Math.sin(mathUtils.degToRad(-cameraState.elevation));
+
+    const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
+    const ambientUpVector = [
+      ambientInnerRadius * Math.cos(mathUtils.degToRad(ambientAzimuth)),
+      Math.sin(mathUtils.degToRad(ambientElevation)),
+      -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
+    ];
+
+    matrices.viewMatrix = projectionUtils.makeView(
+      cameraState.cx,
+      cameraState.cy,
+      cameraState.cz,
+      cameraState.elevation,
+      -cameraState.angle
+    );
+
+    let viewMatrix = projectionUtils.makeView(
+      cameraState.cx,
+      cameraState.cy,
+      cameraState.cz,
+      cameraState.elevation,
+      -cameraState.angle
+    );
+
+    // Matrix to transform light direction from world to camera space
+    let lightDirMatrix = mathUtils.invertMatrix(
+      mathUtils.transposeMatrix(viewMatrix)
+    );
+
+    // Directional light transformed by the 3x3 submatrix
+    let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
+      mathUtils.sub3x3from4x4(lightDirMatrix),
+      lightDirection
+    );
+
+    const cameraSpaceAmbientDirection = mathUtils.multiplyMatrix3Vector3(
+      mathUtils.sub3x3from4x4(lightDirMatrix),
+      ambientUpVector
+    );
+
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
-
-      cameraState.cz =
-        cameraState.lookRadius *
-        Math.cos(mathUtils.degToRad(-cameraState.angle)) *
-        Math.cos(mathUtils.degToRad(-cameraState.elevation));
-      cameraState.cx =
-        cameraState.lookRadius *
-        Math.sin(mathUtils.degToRad(-cameraState.angle)) *
-        Math.cos(mathUtils.degToRad(-cameraState.elevation));
-      cameraState.cy =
-        cameraState.lookRadius *
-        Math.sin(mathUtils.degToRad(-cameraState.elevation));
-
-      const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
-      const ambientUpVector = [
-        ambientInnerRadius * Math.cos(mathUtils.degToRad(ambientAzimuth)),
-        Math.sin(mathUtils.degToRad(ambientElevation)),
-        -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
-      ];
-
-      matrices.viewMatrix = projectionUtils.makeView(
-        cameraState.cx,
-        cameraState.cy,
-        cameraState.cz,
-        cameraState.elevation,
-        -cameraState.angle
-      );
-      // Matrix to transform light direction from world to camera space
-      let lightDirMatrix = mathUtils.invertMatrix(
-        mathUtils.transposeMatrix(matrices.viewMatrix)
-      );
-
-      // Directional light transformed by the 3x3 submatrix
-      let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
-        mathUtils.sub3x3from4x4(lightDirMatrix),
-        lightDirection
-      );
 
       let viewWorldMatrix = mathUtils.multiplyMatrices(
         matrices.viewMatrix,
@@ -366,11 +381,6 @@ const mainTest = async function () {
       let projectionMatrix = mathUtils.multiplyMatrices(
         matrices.perspectiveMatrix,
         viewWorldMatrix
-      );
-
-      const cameraSpaceAmbientDirection = mathUtils.multiplyMatrix3Vector3(
-        mathUtils.sub3x3from4x4(lightDirMatrix),
-        ambientUpVector
       );
 
       gl.uniformMatrix4fv(
@@ -404,11 +414,6 @@ const mainTest = async function () {
       gl.uniform3fv(ambientUpVectorLocation, cameraSpaceAmbientDirection);
 
       gl.uniform1i(ambientTypeLocation, ambientType);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.activeTexture(gl.TEXTURE0 + 1);
-      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
 
       gl.uniform1i(textLocation, 0);
       gl.uniform1i(normalMapLocation, 1);
