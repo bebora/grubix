@@ -8,6 +8,7 @@ import {
 } from "./utils.js";
 import { initializeCube } from "./rubikscube.js";
 import { InputHandler } from "./input-handling.js";
+import { SkyBox } from "./skybox.js";
 import "./webgl-obj-loader.min.js";
 
 // TODO move to appropriate file this function
@@ -143,6 +144,9 @@ const mainTest = async function () {
   // Start listening to user input
   const inputHandler = new InputHandler(canvas, cube, cameraState, matrices);
   inputHandler.initInputEventListeners();
+
+  const skyBox = new SkyBox(gl, assetDir, shaderDir);
+  await skyBox.init();
 
   // Load and compile shaders
   const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
@@ -306,6 +310,7 @@ const mainTest = async function () {
 
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(program);
 
     matrices.perspectiveMatrix = projectionUtils.makePerspective(
       90,
@@ -365,6 +370,26 @@ const mainTest = async function () {
       ambientUpVector
     );
 
+    gl.uniform1f(textureIntensityLocation, textureIntensity);
+
+    gl.uniform3fv(materialDiffuseColorLocation, materialDiffuseColor);
+
+    gl.uniform3fv(lightDirLocation, directionalLightTransformed);
+
+    gl.uniform3fv(lightColLocation, directionalLightColor);
+
+    gl.uniform3fv(mainAmbientColorLocation, mainAmbientColor);
+
+    gl.uniform3fv(secondaryAmbientColorLocation, secondaryAmbientColor);
+
+    gl.uniform3fv(ambientUpVectorLocation, cameraSpaceAmbientDirection);
+
+    gl.uniform1i(ambientTypeLocation, ambientType);
+
+    gl.uniform1i(textLocation, 0);
+
+    gl.uniform1i(normalMapLocation, 1);
+
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
 
@@ -399,25 +424,6 @@ const mainTest = async function () {
         mathUtils.transposeMatrix(normalMatrix)
       );
 
-      gl.uniform1f(textureIntensityLocation, textureIntensity);
-
-      gl.uniform3fv(materialDiffuseColorLocation, materialDiffuseColor);
-
-      gl.uniform3fv(lightDirLocation, directionalLightTransformed);
-
-      gl.uniform3fv(lightColLocation, directionalLightColor);
-
-      gl.uniform3fv(mainAmbientColorLocation, mainAmbientColor);
-
-      gl.uniform3fv(secondaryAmbientColorLocation, secondaryAmbientColor);
-
-      gl.uniform3fv(ambientUpVectorLocation, cameraSpaceAmbientDirection);
-
-      gl.uniform1i(ambientTypeLocation, ambientType);
-
-      gl.uniform1i(textLocation, 0);
-      gl.uniform1i(normalMapLocation, 1);
-
       // Bind VAO to obtain buffers set outside of the rendering loop
       gl.bindVertexArray(cube.pieceArray[i].vao);
       gl.drawElements(
@@ -427,6 +433,8 @@ const mainTest = async function () {
         0
       );
     }
+
+    skyBox.renderSkyBox(matrices.perspectiveMatrix, viewMatrix);
 
     window.requestAnimationFrame(drawFrame);
   }

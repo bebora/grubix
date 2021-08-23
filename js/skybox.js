@@ -1,0 +1,178 @@
+import { fetchFile, mathUtils, shaderUtils } from "./utils.js";
+import "./webgl-obj-loader.min.js";
+
+/**
+ * Manage the rendering of a static skybox
+ */
+export class SkyBox {
+  /**
+   *
+   * @param {WebGL2RenderingContext} gl the WebGl rendering context
+   * @param {string} assetDir the directory of the assets
+   * @param {string} shaderDir the directory of the shaders
+   */
+  constructor(gl, assetDir, shaderDir) {
+    this.vao = gl.createVertexArray();
+    this.gl = gl;
+    this.assetDir = assetDir;
+    this.shaderDir = shaderDir;
+  }
+
+  async init() {
+    // Load and compile shaders
+    const vertexShaderStr = await fetchFile(`${this.shaderDir}/skybox_vs.glsl`);
+    const fragmentShaderStr = await fetchFile(
+      `${this.shaderDir}skybox_fs.glsl`
+    );
+    this.program = shaderUtils.createAndCompileShaders(this.gl, [
+      vertexShaderStr,
+      fragmentShaderStr,
+    ]);
+
+    // Get uniforms
+    this.skyboxTexHandle = this.gl.getUniformLocation(
+      this.program,
+      "u_texture"
+    );
+    this.inverseViewProjMatrixHandle = this.gl.getUniformLocation(
+      this.program,
+      "inverseViewProjMatrix"
+    );
+    this.skyboxVertPosAttr = this.gl.getAttribLocation(
+      this.program,
+      "in_position"
+    );
+
+    // Load positionBuffer
+    const skyboxVertPos = new Float32Array([
+      -1, -1, 1.0, 1, -1, 1.0, -1, 1, 1.0, -1, 1, 1.0, 1, -1, 1.0, 1, 1, 1.0,
+    ]);
+
+    this.gl.bindVertexArray(this.vao);
+    let positionBuffer = this.gl.createBuffer();
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      skyboxVertPos,
+      this.gl.STATIC_DRAW
+    );
+    this.gl.enableVertexAttribArray(this.skyboxVertPosAttr);
+    this.gl.vertexAttribPointer(
+      this.skyboxVertPosAttr,
+      3,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+    this.loadTexture();
+  }
+
+  /**
+   * Retrieve the texture targets together with the url of the file
+   * @returns {{target: WebGL2RenderingContext.GL_ENUM, url: string}[]}
+   */
+  getTexturesWithTarget() {
+    return [
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+        url: `${this.assetDir}skybox/right.jpg`,
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+        url: `${this.assetDir}skybox/left.jpg`,
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+        url: `${this.assetDir}skybox/top.jpg`,
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        url: `${this.assetDir}skybox/bottom.jpg`,
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+        url: `${this.assetDir}skybox/front.jpg`,
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+        url: `${this.assetDir}skybox/back.jpg`,
+      },
+    ];
+  }
+
+  /**
+   * Render the Skybox in the given canvas
+   */
+  loadTexture() {
+    // Load the texture
+    let texture = this.gl.createTexture();
+    this.texture = texture;
+    this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
+
+    const texturesWithTarget = this.getTexturesWithTarget();
+    texturesWithTarget.forEach((textureWithTarget) => {
+      const { target, url } = textureWithTarget;
+
+      // render in the texture, before it's loaded
+      this.gl.texImage2D(
+        target,
+        0,
+        this.gl.RGBA,
+        1024,
+        1024,
+        0,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        null
+      );
+
+      // Asynchronously load an image
+      // TODO Avoid to load the images in an event listener, but return func to load them async together with normal map
+      const image = new Image();
+      image.src = url;
+      let gl = this.gl;
+      image.addEventListener("load", function () {
+        // Now that the image has loaded upload it to the texture.
+        gl.activeTexture(gl.TEXTURE0 + 3);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+      });
+    });
+    this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
+    this.gl.texParameteri(
+      this.gl.TEXTURE_CUBE_MAP,
+      this.gl.TEXTURE_MIN_FILTER,
+      this.gl.LINEAR_MIPMAP_LINEAR
+    );
+  }
+
+  /**
+   * Render the skybox
+   * @param {number[]} perspectiveMatrix
+   * @param {number[]} viewMatrix
+   */
+  renderSkyBox(perspectiveMatrix, viewMatrix) {
+    this.gl.useProgram(this.program);
+
+    this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
+    this.gl.uniform1i(this.skyboxTexHandle, 3);
+
+    let viewProjMat = mathUtils.multiplyMatrices(perspectiveMatrix, viewMatrix);
+    let inverseViewProjMatrix = mathUtils.invertMatrix(viewProjMat);
+    this.gl.uniformMatrix4fv(
+      this.inverseViewProjMatrixHandle,
+      this.gl.FALSE,
+      mathUtils.transposeMatrix(inverseViewProjMatrix)
+    );
+
+    this.gl.bindVertexArray(this.vao);
+    this.gl.depthFunc(this.gl.LEQUAL);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+  }
+}
