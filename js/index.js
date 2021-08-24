@@ -113,8 +113,11 @@ const mainTest = async function () {
   const baseDir = window.location.href.replace(page, "");
   const shaderDir = `${baseDir}shaders/`;
   const assetDir = `${baseDir}assets/`;
+  const meshDir = `${assetDir}meshes/`;
+  const textureDir = `${assetDir}textures/`;
+  const skyboxDir = `${assetDir}skybox/`;
 
-  let cube = await initializeCube(assetDir);
+  let cube = await initializeCube(meshDir);
 
   const cameraState = {
     elevation: initialElevation,
@@ -145,7 +148,7 @@ const mainTest = async function () {
   const inputHandler = new InputHandler(canvas, cube, cameraState, matrices);
   inputHandler.initInputEventListeners();
 
-  const skyBox = new SkyBox(gl, assetDir, shaderDir);
+  const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
   await skyBox.init();
 
   // Load and compile shaders
@@ -273,9 +276,9 @@ const mainTest = async function () {
 
   // Set the image sources
   const image = new Image();
-  image.src = `${assetDir}/customCubeTexture.png`;
+  image.src = `${textureDir}customCubeTexture.png`;
   const normalImage = new Image();
-  normalImage.src = `${assetDir}/customCubeNormal.png`;
+  normalImage.src = `${textureDir}customCubeNormal.png`;
 
   // Create texture
   const texture = gl.createTexture();

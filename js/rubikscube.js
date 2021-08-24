@@ -30,15 +30,15 @@ class Piece {
 
 /**
  * Initialize every piece of the cube
- * @param {string} assetDir
+ * @param {string} meshDir
  * @return {Promise<*[]>}
  */
-async function initializePieces(assetDir) {
+async function initializePieces(meshDir) {
   let pieceArray = [];
 
   // Fetch meshes in parallel and sequentially process them as they are ready
   let promises = [...Array(26).keys()].map((id) =>
-    fetchFile(`${assetDir}piece${id}.obj`)
+    fetchFile(`${meshDir}piece${id}.obj`)
   );
 
   // qui importo gli obj, per ogni obj faccio un oggetto Piece
@@ -418,12 +418,12 @@ class RubiksCube {
 
 /**
  * Initialize cube
- * @param {string} assetDir
+ * @param {string} meshDir
  * @return {Promise<RubiksCube>}
  */
-async function initializeCube(assetDir) {
+async function initializeCube(meshDir) {
   let rubiksCube = new RubiksCube();
-  rubiksCube.pieceArray = await initializePieces(assetDir);
+  rubiksCube.pieceArray = await initializePieces(meshDir);
   rubiksCube.slotArray = initializeSlots(rubiksCube.pieceArray);
   rubiksCube.faces = initializeFaces(rubiksCube.slotArray);
   rubiksCube.setBoundsToPieces();
