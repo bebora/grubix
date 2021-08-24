@@ -8,13 +8,13 @@ export class SkyBox {
   /**
    *
    * @param {WebGL2RenderingContext} gl the WebGl rendering context
-   * @param {string} assetDir the directory of the assets
+   * @param {string} cubemapDir the directory of the cubemaps
    * @param {string} shaderDir the directory of the shaders
    */
-  constructor(gl, assetDir, shaderDir) {
+  constructor(gl, cubemapDir, shaderDir) {
     this.vao = gl.createVertexArray();
     this.gl = gl;
-    this.assetDir = assetDir;
+    this.cubemapDir = cubemapDir;
     this.shaderDir = shaderDir;
   }
 
@@ -78,27 +78,27 @@ export class SkyBox {
     return [
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-        url: `${this.assetDir}skybox/right.jpg`,
+        url: `${this.cubemapDir}right.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-        url: `${this.assetDir}skybox/left.jpg`,
+        url: `${this.cubemapDir}left.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-        url: `${this.assetDir}skybox/top.jpg`,
+        url: `${this.cubemapDir}top.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-        url: `${this.assetDir}skybox/bottom.jpg`,
+        url: `${this.cubemapDir}bottom.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-        url: `${this.assetDir}skybox/front.jpg`,
+        url: `${this.cubemapDir}front.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-        url: `${this.assetDir}skybox/back.jpg`,
+        url: `${this.cubemapDir}back.jpg`,
       },
     ];
   }
