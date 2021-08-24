@@ -83,6 +83,68 @@ const mathUtils = {
     return out;
   },
 
+  scalarProduct3: function (v1, v2) {
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+  },
+
+  scalarProduct2: function (v1, v2) {
+    return v1[0] * v2[0] + v1[1] * v2[1];
+  },
+
+  subtractVectors3: function (v1, v2) {
+    return [v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]];
+  },
+
+  subtractVectors2: function (v1, v2) {
+    return [v1[0] - v2[0], v1[1] - v2[1]];
+  },
+
+  sumVectors3: function (v1, v2) {
+    return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]];
+  },
+
+  multiplyVectorScalar: function (v, s) {
+    return [v[0] * s, v[1] * s, v[2] * s];
+  },
+
+  crossProduct3: function (v1, v2) {
+    //cross(A, B) = [ a2 * b3 - a3 * b2, a3 * b1 - a1 * b3, a1 * b2 - a2 * b1 ]
+    return [
+      v1[1] * v2[2] - v1[2] * v2[1],
+      v1[2] * v2[0] - v1[0] * v2[2],
+      v1[0] * v2[1] - v1[1] * v2[0],
+    ];
+  },
+
+  distance3: function (p1, p2) {
+    return Math.sqrt(
+      (p1[0] - p2[0]) * (p1[0] - p2[0]) +
+        (p1[1] - p2[1]) * (p1[1] - p2[1]) +
+        (p1[2] - p2[2]) * (p1[2] - p2[2])
+    );
+  },
+
+  distance2: function (p1, p2) {
+    return Math.sqrt(
+      (p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
+    );
+  },
+
+  vectorNorm3: function (v) {
+    return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  },
+
+  vectorNorm2: function (v) {
+    return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+  },
+
+  normaliseVector3: function (vec) {
+    let magnitude = Math.sqrt(
+      vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]
+    );
+    return [vec[0] / magnitude, vec[1] / magnitude, vec[2] / magnitude];
+  },
+
   /**
    * Transpose a 3D matrix
    * @param {number[]} a original matrix

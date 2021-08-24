@@ -61,12 +61,23 @@ let materialDiffuseColor = parseHexColor(
   materialDiffuseColorInputElement.value
 );
 
-let cx = 4.5;
-let cy = 0.0;
-let cz = 10.0;
-let elevation = 0.0;
-let angle = 0.0;
-let lookRadius = 2.5;
+//let initialCx = 4.5;
+//let initialCy = 0.0;
+//let initialCz = 10.0;
+let initialElevation = 0.0;
+let initialAngle = 0.0;
+let initialLookRadius = 9;
+
+let initialCz =
+  initialLookRadius *
+  Math.cos(mathUtils.degToRad(-initialAngle)) *
+  Math.cos(mathUtils.degToRad(-initialElevation));
+let initialCx =
+  initialLookRadius *
+  Math.sin(mathUtils.degToRad(-initialAngle)) *
+  Math.cos(mathUtils.degToRad(-initialElevation));
+let initialCy =
+  initialLookRadius * Math.sin(mathUtils.degToRad(-initialElevation));
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -105,13 +116,32 @@ const mainTest = async function () {
   let cube = await initializeCube(assetDir);
 
   const cameraState = {
-    elevation: elevation,
-    angle: angle,
-    lookRadius: lookRadius,
+    elevation: initialElevation,
+    angle: initialAngle,
+    lookRadius: initialLookRadius,
+    cx: initialCx,
+    cy: initialCy,
+    cz: initialCz,
+  };
+
+  const matrices = {
+    perspectiveMatrix: projectionUtils.makePerspective(
+      90,
+      canvas.width / canvas.height,
+      0.1,
+      100.0
+    ),
+    viewMatrix: projectionUtils.makeView(
+      cameraState.cx,
+      cameraState.cy,
+      cameraState.cz,
+      cameraState.elevation,
+      -cameraState.angle
+    ),
   };
 
   // Start listening to user input
-  const inputHandler = new InputHandler(canvas, cube, cameraState);
+  const inputHandler = new InputHandler(canvas, cube, cameraState, matrices);
   inputHandler.initInputEventListeners();
 
   // Load and compile shaders
@@ -278,28 +308,24 @@ const mainTest = async function () {
   function drawFrame() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    let perspectiveMatrix = projectionUtils.makePerspective(
+    matrices.perspectiveMatrix = projectionUtils.makePerspective(
       90,
       gl.canvas.width / gl.canvas.height,
       0.1,
       100.0
     );
-
     for (let i = 0; i < 26; i++) {
-      let worldMatrix = mathUtils.multiplyMatrices(
-        projectionUtils.makeWorld(0, 0, 0, 0.0, 0, 0.0, 0.25),
-        cube.pieceArray[i].worldMatrix
-      );
+      let worldMatrix = cube.pieceArray[i].worldMatrix;
 
-      cz =
+      cameraState.cz =
         cameraState.lookRadius *
         Math.cos(mathUtils.degToRad(-cameraState.angle)) *
         Math.cos(mathUtils.degToRad(-cameraState.elevation));
-      cx =
+      cameraState.cx =
         cameraState.lookRadius *
         Math.sin(mathUtils.degToRad(-cameraState.angle)) *
         Math.cos(mathUtils.degToRad(-cameraState.elevation));
-      cy =
+      cameraState.cy =
         cameraState.lookRadius *
         Math.sin(mathUtils.degToRad(-cameraState.elevation));
 
@@ -310,17 +336,16 @@ const mainTest = async function () {
         -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
       ];
 
-      let viewMatrix = projectionUtils.makeView(
-        cx,
-        cy,
-        cz,
+      matrices.viewMatrix = projectionUtils.makeView(
+        cameraState.cx,
+        cameraState.cy,
+        cameraState.cz,
         cameraState.elevation,
         -cameraState.angle
       );
-
       // Matrix to transform light direction from world to camera space
       let lightDirMatrix = mathUtils.invertMatrix(
-        mathUtils.transposeMatrix(viewMatrix)
+        mathUtils.transposeMatrix(matrices.viewMatrix)
       );
 
       // Directional light transformed by the 3x3 submatrix
@@ -329,7 +354,10 @@ const mainTest = async function () {
         lightDirection
       );
 
-      let viewWorldMatrix = mathUtils.multiplyMatrices(viewMatrix, worldMatrix);
+      let viewWorldMatrix = mathUtils.multiplyMatrices(
+        matrices.viewMatrix,
+        worldMatrix
+      );
 
       // Inverse transpose of the world view matrix for the normals
       let normalMatrix = mathUtils.invertMatrix(
@@ -337,7 +365,7 @@ const mainTest = async function () {
       );
 
       let projectionMatrix = mathUtils.multiplyMatrices(
-        perspectiveMatrix,
+        matrices.perspectiveMatrix,
         viewWorldMatrix
       );
 

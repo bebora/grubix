@@ -1,10 +1,16 @@
 import { mathUtils, fetchFile, transformUtils } from "./utils.js";
 import "./webgl-obj-loader.min.js";
 
-var rotMatrixDict = {
+const rotMatrixDict = {
   x: transformUtils.makeRotateXMatrix,
   y: transformUtils.makeRotateYMatrix,
   z: transformUtils.makeRotateZMatrix,
+};
+
+const coordDict = {
+  x: 0,
+  y: 1,
+  z: 2,
 };
 
 class Piece {
@@ -18,6 +24,7 @@ class Piece {
     this.bitangents = bitangents;
     this.worldMatrix = mathUtils.identityMatrix();
     this.vao = null;
+    this.bounds = [];
   }
 }
 
@@ -53,7 +60,6 @@ async function initializePieces(assetDir) {
       )
     );
   }
-  //console.log(pieceArray);
   return pieceArray;
 }
 
@@ -61,6 +67,7 @@ class Slot {
   constructor(id, piece) {
     this.id = id;
     this.piece = piece;
+    this.faces = null;
   }
 }
 
@@ -69,7 +76,6 @@ function initializeSlots(pieceArray) {
   for (let i = 0; i < 26; i++) {
     slotArray.push(new Slot(i, pieceArray[i]));
   }
-  //console.log(slotArray);
   return slotArray;
 }
 
@@ -81,14 +87,17 @@ class Face {
    * @param {number[]} cwMatrix clockwise rotation 4D matrix
    * @param {number[]} ccwMatrix counter clockwise rotation 4D matrix
    */
-  constructor(name, slotsID, slotArray, cwMatrix, ccwMatrix, rotAxis, rotDir) {
+  constructor(name, slotsID, slotArray, rotAxis, rotDir, fixedCoordinateValue) {
     this.name = name;
+    this.slotsID = slotsID;
     this.slots = slotsID.map((x) => slotArray[x]);
-    this.cwMatrix = rotMatrixDict[rotAxis](rotDir * 90);
-    this.ccwMatrix = rotMatrixDict[rotAxis](-rotDir * 90);
     this.rotAxis = rotAxis;
     this.rotDir = rotDir;
     this.tempAngle = 0;
+    this.fixedCoordinate = rotAxis;
+    this.fixedCoordinateValue = fixedCoordinateValue;
+    this.center = [0, 0, 0];
+    this.center[this.fixedCoordinate] = fixedCoordinateValue;
   }
   turnABit(angle) {
     for (let i = 0; i < this.slots.length; i++) {
@@ -102,29 +111,17 @@ class Face {
 
   turn(clockwise) {
     if (clockwise) {
-      // for (let i = 0; i < this.slots.length; i++) {
-      //   this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
-      //     this.cwMatrix,
-      //     this.slots[i].piece.worldMatrix
-      //   );
-      // }
       let tempC = this.slots[6].piece;
       let tempE = this.slots[7].piece;
       this.slots[6].piece = this.slots[4].piece;
-      this.slots[4].piece = this.slots[2].piece; //in 25 l'8
-      this.slots[2].piece = this.slots[0].piece; // in 8 il 6
+      this.slots[4].piece = this.slots[2].piece;
+      this.slots[2].piece = this.slots[0].piece;
       this.slots[0].piece = tempC;
       this.slots[7].piece = this.slots[5].piece;
       this.slots[5].piece = this.slots[3].piece;
       this.slots[3].piece = this.slots[1].piece;
       this.slots[1].piece = tempE;
     } else {
-      // for (let i = 0; i < this.slots.length; i++) {
-      //   this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
-      //     this.ccwMatrix,
-      //     this.slots[i].piece.worldMatrix
-      //   );
-      // }
       let tempC = this.slots[0].piece;
       let tempE = this.slots[1].piece;
       this.slots[0].piece = this.slots[2].piece;
@@ -137,119 +134,111 @@ class Face {
       this.slots[7].piece = tempE;
     }
   }
+
+  intersectRay(rayStartPoint, normalisedRayDir) {
+    let intersection = [];
+    let fixedCoordinateNumber = coordDict[this.fixedCoordinate];
+
+    if (normalisedRayDir[fixedCoordinateNumber] == 0) return null;
+
+    let t =
+      (this.fixedCoordinateValue - rayStartPoint[fixedCoordinateNumber]) /
+      normalisedRayDir[fixedCoordinateNumber]; //geometric formula
+    intersection[fixedCoordinateNumber] = this.fixedCoordinateValue;
+    for (const [coord, number] of Object.entries(coordDict)) {
+      if (coord != this.fixedCoordinate) {
+        intersection[number] =
+          rayStartPoint[number] + normalisedRayDir[number] * t; // geometric formula
+      }
+    }
+    return intersection;
+  }
 }
 
 function initializeFaces(slotArray) {
   let faces = {};
   faces["U"] = new Face(
-    "up",
+    "U",
     [0, 1, 2, 5, 8, 7, 6, 3, 4],
     slotArray,
-    transformUtils.makeRotateYMatrix(-90),
-    transformUtils.makeRotateYMatrix(90),
     "y",
-    -1
+    -1,
+    3
   );
   faces["D"] = new Face(
-    "down",
+    "D",
     [23, 24, 25, 22, 19, 18, 17, 20, 21],
     slotArray,
-    transformUtils.makeRotateYMatrix(90),
-    transformUtils.makeRotateYMatrix(-90),
     "y",
-    1
+    1,
+    -3
   );
   faces["L"] = new Face(
-    "left",
+    "L",
     [0, 3, 6, 14, 23, 20, 17, 9, 12],
     slotArray,
-    transformUtils.makeRotateXMatrix(90),
-    transformUtils.makeRotateXMatrix(-90),
     "x",
-    1
+    1,
+    -3
   );
   faces["R"] = new Face(
-    "right",
+    "R",
     [8, 5, 2, 11, 19, 22, 25, 16, 13],
     slotArray,
-    transformUtils.makeRotateXMatrix(-90),
-    transformUtils.makeRotateXMatrix(90),
     "x",
-    -1
+    -1,
+    3
   );
   faces["F"] = new Face(
-    "front",
+    "F",
     [6, 7, 8, 16, 25, 24, 23, 14, 15],
     slotArray,
-    transformUtils.makeRotateZMatrix(-90),
-    transformUtils.makeRotateZMatrix(90),
     "z",
-    -1
+    -1,
+    3
   );
   faces["B"] = new Face(
-    "back",
+    "B",
     [2, 1, 0, 9, 17, 18, 19, 11, 10],
     slotArray,
-    transformUtils.makeRotateZMatrix(90),
-    transformUtils.makeRotateZMatrix(-90),
     "z",
-    1
+    1,
+    -3
   );
   faces["M"] = new Face(
-    "middle",
+    "M",
     [1, 4, 7, 15, 24, 21, 18, 10],
     slotArray,
-    transformUtils.makeRotateXMatrix(90),
-    transformUtils.makeRotateXMatrix(-90),
     "x",
-    1
+    1,
+    0
   );
   faces["E"] = new Face(
-    "equatorial",
+    "E",
     [14, 15, 16, 13, 11, 10, 9, 12],
     slotArray,
-    transformUtils.makeRotateYMatrix(90),
-    transformUtils.makeRotateYMatrix(-90),
     "y",
-    1
+    1,
+    0
   );
   faces["S"] = new Face(
-    "standing",
+    "S",
     [3, 4, 5, 13, 22, 21, 20, 12],
     slotArray,
-    transformUtils.makeRotateZMatrix(-90),
-    transformUtils.makeRotateZMatrix(90),
     "z",
-    -1
+    -1,
+    0
   );
   return faces;
 }
-
-// magari fai un dict e poi lo piazzi in un oggetto RubiksCube o OurCube o CubeGraph
-// poi puoi esportare sta classe CubeGraph che ha tipo un metodo makeCompleteTurn, makeDeltaTurn (per il trascinamento)
-// complete turn va fatta quando l'animazione è completata e serve a cambiare il scene graph
-// delta turn va fatta durante il trascinamento, è quella che cambia effettivamente la world matrix dei cubetti di quella faccia
-//    questa world matrix andrà settata come uniform per renderizzare subito il cambiamento
 
 class RubiksCube {
   constructor() {
     this.pieceArray = null;
     this.slotArray = null;
     this.faces = null;
+    this.facelets = [];
     this.cube = new Cube();
-
-    // console.log(this.cube.asString());
-    // console.log(this.cube.isSolved());
-    // this.cube.move("L M R'");
-    // console.log("moved");
-    // console.log(this.cube.asString());
-    // console.log(this.cube.isSolved());
-
-    //Cube.initSolver();
-    // let algo = cube.solve();
-    // console.log(algo);
-    // cube.move(algo);
-    // console.log(cube.asString());
   }
   isSolved() {
     return this.cube.isSolved();
@@ -291,6 +280,125 @@ class RubiksCube {
 
     face.tempAngle = 0;
   }
+
+  setFacelets() {
+    for (let s = 0; s < this.slotArray.length; s++) {
+      for (const [faceName, faceObj] of Object.entries(
+        this.slotArray[s].faces
+      )) {
+        if (!"MES".includes(faceName)) {
+          let facelet = {};
+          facelet.slot = this.slotArray[s];
+          facelet.face = faceObj;
+          facelet.faces = this.slotArray[s].faces;
+          facelet.fixedCoordinate = faceObj.fixedCoordinate;
+          facelet.fixedCoordinateValue = faceObj.fixedCoordinateValue;
+          facelet.bounds = [];
+          for (const [coord, number] of Object.entries(coordDict)) {
+            if (coord != facelet.fixedCoordinate) {
+              let min = this.pieceArray[s].bounds[number][0]; // just for now slots are the same as pieces, no move has been done
+              let max = this.pieceArray[s].bounds[number][1];
+              facelet.bounds[number] = [min, max];
+            }
+          }
+          facelet.directions = {};
+
+          this.facelets.push(facelet);
+        }
+      }
+    }
+  }
+
+  setDirectionsToFacelets() {
+    for (let f = 0; f < this.facelets.length; f++) {
+      let facelet = this.facelets[f];
+      for (const [faceName, faceObj] of Object.entries(facelet.faces)) {
+        if (faceName != facelet.face.name) {
+          let rotAxis = [0, 0, 0];
+          rotAxis[coordDict[faceObj.rotAxis]] = faceObj.rotDir;
+          let v1 = rotAxis;
+          let v2 = [];
+          let startV2 = faceObj.center;
+          let endV2 = [];
+          endV2[coordDict[facelet.face.fixedCoordinate]] =
+            facelet.face.fixedCoordinateValue;
+          for (const [coord, index] of Object.entries(coordDict)) {
+            if (coord != facelet.face.fixedCoordinate) {
+              endV2[index] = faceObj.center[index];
+            }
+          }
+          v2 = mathUtils.subtractVectors3(endV2, startV2);
+          let dir = mathUtils.normaliseVector3(mathUtils.crossProduct3(v1, v2)); //maybe normalize
+          facelet.directions[faceName] = dir;
+        }
+      }
+    }
+  }
+
+  intersectFacelets(rayStartPoint, normalisedRayDir) {
+    //for every facelet get intersection and distance, returns nearest facelet or null
+    let minDistance = null;
+    let intersection = null;
+    let intersectedFacelet = null;
+    for (let f = 0; f < this.facelets.length; f++) {
+      let facelet = this.facelets[f];
+      let temp_intersection = [];
+      let fixedCoordinateNumber = coordDict[facelet.fixedCoordinate];
+      if (normalisedRayDir[fixedCoordinateNumber] == 0) continue;
+      let t =
+        (facelet.fixedCoordinateValue - rayStartPoint[fixedCoordinateNumber]) /
+        normalisedRayDir[fixedCoordinateNumber]; //geometric formula
+      temp_intersection[fixedCoordinateNumber] = facelet.fixedCoordinateValue;
+      let withinBounds = true;
+      for (const [coord, number] of Object.entries(coordDict)) {
+        if (number != fixedCoordinateNumber) {
+          temp_intersection[number] =
+            rayStartPoint[number] + normalisedRayDir[number] * t; // geometric formula
+          if (
+            temp_intersection[number] < facelet.bounds[number][0] ||
+            temp_intersection[number] > facelet.bounds[number][1]
+          )
+            withinBounds = false;
+        }
+      }
+      if (withinBounds) {
+        let distance = mathUtils.distance3(temp_intersection, rayStartPoint); // distance from camera
+        if (
+          minDistance == null ||
+          (minDistance != null && distance < minDistance)
+        ) {
+          minDistance = distance;
+          intersection = temp_intersection;
+          intersectedFacelet = facelet;
+        }
+      }
+    }
+    return [intersectedFacelet, intersection];
+  }
+
+  setBoundsToPieces() {
+    for (let p = 0; p < this.pieceArray.length; p++) {
+      for (const [coord, number] of Object.entries(coordDict)) {
+        let filteredVertices = this.pieceArray[p].vertices.filter(
+          (element, index) => index % 3 == number
+        );
+        let min = Math.min.apply(null, filteredVertices);
+        let max = Math.max.apply(null, filteredVertices);
+        this.pieceArray[p].bounds.push([min, max]);
+      }
+    }
+  }
+
+  setFacesToSlots() {
+    for (let i = 0; i < this.slotArray.length; i++) {
+      let tempFaces = {};
+      for (const [faceName, faceObj] of Object.entries(this.faces)) {
+        if (faceObj.slotsID.includes(this.slotArray[i].id))
+          tempFaces[faceName] = faceObj;
+      }
+      this.slotArray[i].faces = tempFaces;
+    }
+  }
 }
 
 /**
@@ -303,6 +411,10 @@ async function initializeCube(assetDir) {
   rubiksCube.pieceArray = await initializePieces(assetDir);
   rubiksCube.slotArray = initializeSlots(rubiksCube.pieceArray);
   rubiksCube.faces = initializeFaces(rubiksCube.slotArray);
+  rubiksCube.setBoundsToPieces();
+  rubiksCube.setFacesToSlots();
+  rubiksCube.setFacelets();
+  rubiksCube.setDirectionsToFacelets();
   return rubiksCube;
 }
 
