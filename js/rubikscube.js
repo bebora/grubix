@@ -250,32 +250,48 @@ class RubiksCube {
   turnFaceABit(faceName, angle) {
     this.faces[faceName].turnABit(angle);
   }
-  realign(faceName) {
-    // first, face must be rotated to the nearest position
+
+  async realignWithAnimation(faceName) {
+    // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
     let tempAngle = face.tempAngle;
     let roundedRotationAngle = Math.round((tempAngle % 360) / 90) * 90;
-    // ora mi conviene capire se devo andare avanti o indietro, cioè se il mio tempAngle è maggiore o minore del rounded
-    // poi se uso l'animazione, spezzo la differenza in tanti turnABit
-    // senza animazione, ruoto di quella differenza, che deve avere il segno giusto
-    let difference = roundedRotationAngle - tempAngle;
-    face.turnABit(difference);
 
-    if (roundedRotationAngle % 360 != 0) {
+    // Compute the difference to the rounderRotationAngle
+    let millisecondsPerAngle = 1;
+    let difference = roundedRotationAngle - tempAngle;
+
+    // Move the face an angle at a time
+    let turningAngle = difference > 0 ? 1.0 : -1.0;
+    difference = Math.abs(difference);
+    let integerDifference = Math.floor(difference);
+    while (integerDifference >= 1) {
+      face.turnABit(turningAngle);
+      integerDifference -= 1;
+      await new Promise((r) => setTimeout(r, millisecondsPerAngle));
+    }
+    // Complete the rotation with the float part
+    face.turnABit(roundedRotationAngle - face.tempAngle);
+
+    // Change the scene graph and cube state if needed
+    if (roundedRotationAngle % 360 !== 0) {
       //cube state and scene graph must be changed
       let move = faceName;
-      if (roundedRotationAngle == 90 || roundedRotationAngle == -270) {
+      if (roundedRotationAngle === 90 || roundedRotationAngle === -270) {
         face.turn(true);
-      } else if (roundedRotationAngle == 180 || roundedRotationAngle == -180) {
+      } else if (
+        roundedRotationAngle === 180 ||
+        roundedRotationAngle === -180
+      ) {
         face.turn(true);
         face.turn(true);
         move += "2";
-      } else if (roundedRotationAngle == -90 || roundedRotationAngle == 270) {
+      } else if (roundedRotationAngle === -90 || roundedRotationAngle === 270) {
         face.turn(false);
         move += "'";
       }
       this.cube.move(move);
-    } // else no move is required
+    }
 
     face.tempAngle = 0;
   }

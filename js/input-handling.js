@@ -94,10 +94,10 @@ const InputHandler = function (
   /**
    * @param {MouseEvent} event
    */
-  function doMouseUp(event) {
+  async function doMouseUp(event) {
     lastMouseX = -100;
     lastMouseY = -100;
-    if (moveActivated) cube.realign(lockedFace);
+    if (moveActivated) await cube.realignWithAnimation(lockedFace);
     moveActivated = false;
     pointerInputState = false;
     lockedDir = [];
