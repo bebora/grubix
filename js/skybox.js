@@ -67,12 +67,12 @@ export class SkyBox {
       0
     );
 
-    this.loadTexture();
+    await this.loadTexture();
   }
 
   /**
    * Retrieve the texture targets together with the url of the file
-   * @returns {{target: WebGL2RenderingContext.GL_ENUM, url: string}[]}
+   * @returns {{target: GLenum, url: string}[]}
    */
   getTexturesWithTarget() {
     return [
@@ -106,7 +106,7 @@ export class SkyBox {
   /**
    * Render the Skybox in the given canvas
    */
-  loadTexture() {
+  async loadTexture() {
     // Load the texture
     let texture = this.gl.createTexture();
     this.texture = texture;
@@ -114,7 +114,7 @@ export class SkyBox {
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
     const texturesWithTarget = this.getTexturesWithTarget();
-    texturesWithTarget.forEach((textureWithTarget) => {
+    for (const textureWithTarget of texturesWithTarget) {
       const { target, url } = textureWithTarget;
 
       // render in the texture, before it's loaded
@@ -130,19 +130,16 @@ export class SkyBox {
         null
       );
 
-      // Asynchronously load an image
-      // TODO Avoid to load the images in an event listener, but return func to load them async together with normal map
+      // TODO Evaluate whether to load them async
       const image = new Image();
       image.src = url;
       let gl = this.gl;
-      image.addEventListener("load", function () {
-        // Now that the image has loaded upload it to the texture.
-        gl.activeTexture(gl.TEXTURE0 + 3);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-      });
-    });
+      await image.decode();
+      // Now that the image has loaded upload it to the texture.
+      gl.activeTexture(gl.TEXTURE0 + 3);
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    }
     this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
     this.gl.texParameteri(
       this.gl.TEXTURE_CUBE_MAP,
@@ -167,7 +164,7 @@ export class SkyBox {
     let inverseViewProjMatrix = mathUtils.invertMatrix(viewProjMat);
     this.gl.uniformMatrix4fv(
       this.inverseViewProjMatrixHandle,
-      this.gl.FALSE,
+      false,
       mathUtils.transposeMatrix(inverseViewProjMatrix)
     );
 
