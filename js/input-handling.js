@@ -34,6 +34,7 @@ const InputHandler = function (
   let rotAmount = 0;
   let accumulator1 = 0;
   let accumulator2 = 0;
+  let animationInProgress = false;
   // let clickedFace = "";
   // let faceDir1 = null;
   // let faceDir2 = null;
@@ -51,12 +52,11 @@ const InputHandler = function (
     //console.log("normalised ray dir " + normalisedRayDir);
     //The ray starts from the camera in world coordinates
     let rayStartPoint = [cameraState.cx, cameraState.cy, cameraState.cz];
-
     let [intersectedFacelet, intersectionPoint] = cube.intersectFacelets(
       rayStartPoint,
       normalisedRayDir
     );
-    if (intersectedFacelet != null) {
+    if (!animationInProgress && intersectedFacelet != null) {
       //console.log(intersectedFacelet.faces);
       activeFacelet = intersectedFacelet;
       cubeActivated = true;
@@ -97,7 +97,14 @@ const InputHandler = function (
   async function doMouseUp(event) {
     lastMouseX = -100;
     lastMouseY = -100;
-    if (moveActivated) await cube.realignWithAnimation(lockedFace);
+    if (moveActivated) {
+      moveActivated = false;
+      pointerInputState = false;
+
+      animationInProgress = true;
+      await cube.realignWithAnimation(lockedFace);
+      animationInProgress = false;
+    }
     moveActivated = false;
     pointerInputState = false;
     lockedDir = [];

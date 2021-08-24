@@ -254,8 +254,8 @@ class RubiksCube {
   async realignWithAnimation(faceName) {
     // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
-    let tempAngle = face.tempAngle;
-    let roundedRotationAngle = Math.round((tempAngle % 360) / 90) * 90;
+    let tempAngle = face.tempAngle = face.tempAngle % 360;
+    let roundedRotationAngle = Math.round((tempAngle) / 90) * 90;
 
     // Compute the difference to the rounderRotationAngle
     let millisecondsPerAngle = 1;
