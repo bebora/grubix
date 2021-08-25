@@ -22,34 +22,34 @@ const InputHandler = function (
   const matrices = matricesParam;
   let cubeActivated = false;
   let moveActivated = false;
-  let faceToMove = "F";
   let startPoint = [];
-  let endPoint = [];
-  let oldEndPoint = [];
-  let threshold = 0.2;
-  let lockedDir = [];
-  let lockedFace = "";
+  let sensitivity = 0.5; // TODO: magari slider nella GUI per regolarla
+  let moveThreshold = 7 * sensitivity;
+  let lockedDir = null;
+  let lockedFace = null;
   let activeFacelet = null;
-  let maxRot = 2.5;
-  let rotAmount = 0;
   let accumulator1 = 0;
   let accumulator2 = 0;
   let animationInProgress = false;
-  // let clickedFace = "";
-  // let faceDir1 = null;
-  // let faceDir2 = null;
+  let currentTime = null;
+  let oldTime = null;
+  let startX = null;
+  let startY = null;
+  let inertiaThreshold = 0.8;
+  let interval = 100;
 
   // Mouse events
   /**
    * @param {MouseEvent} event
    */
   function doMouseDown(event) {
-    lastMouseX = event.clientX;
-    lastMouseY = event.clientY;
-    console.log("mouse DOWN, clientXY: " + [lastMouseX, lastMouseY]);
+    startX = lastMouseX = event.clientX;
+    startY = lastMouseY = event.clientY;
+
+    oldTime = new Date().getTime();
+    //console.log("mouse DOWN, clientXY: " + [lastMouseX, lastMouseY]);
 
     let normalisedRayDir = getNormRayDir(lastMouseX, lastMouseY);
-    //console.log("normalised ray dir " + normalisedRayDir);
     //The ray starts from the camera in world coordinates
     let rayStartPoint = [cameraState.cx, cameraState.cy, cameraState.cz];
     let [intersectedFacelet, intersectionPoint] = cube.intersectFacelets(
@@ -57,37 +57,16 @@ const InputHandler = function (
       normalisedRayDir
     );
     if (!animationInProgress && intersectedFacelet != null) {
-      //console.log(intersectedFacelet.faces);
       activeFacelet = intersectedFacelet;
       cubeActivated = true;
       startPoint = intersectionPoint;
-      console.log(
-        "mouse DOWN, pixel coordinates: " +
-          getPixelCoordinates(intersectionPoint)
-      );
+      // console.log(
+      //   "mouse DOWN, pixel coordinates: " +
+      //     getPixelCoordinates(intersectionPoint)
+      // );
     } else {
       cubeActivated = false;
     }
-    //startPoint =  provaIntersect(rayStartPoint, normalisedRayDir);
-    //console.log(cameraState.cz);
-    // if (
-    //   startPoint[0] > 1 &&
-    //   startPoint[0] < 3 &&
-    //   startPoint[2] > 1 &&
-    //   startPoint[2] < 3
-    // ) {
-    //   //console.log(startPoint, "INTERSECATO");
-    //   cubeActivated = true;
-    // } else {
-    //   //console.log(startPoint, "NON INTERSECATO");
-    //   cubeActivated = false;
-    // }
-
-    // if (lastMouseX < canvas.width / 2) {
-    //   cubeActivated = true;
-    // } else {
-    //   cubeActivated = false;
-    // }
     pointerInputState = true;
   }
 
@@ -95,24 +74,29 @@ const InputHandler = function (
    * @param {MouseEvent} event
    */
   async function doMouseUp(event) {
+    let endX = event.clientX;
+    let endY = event.clientY;
     lastMouseX = -100;
     lastMouseY = -100;
+
     if (moveActivated) {
+      currentTime = new Date().getTime();
+      let deltaTime = currentTime - oldTime;
+      let deltaSpace = mathUtils.distance2([startX, startY], [endX, endY]);
+      let speed = deltaSpace / deltaTime;
+      let inertia = speed > inertiaThreshold;
       moveActivated = false;
       pointerInputState = false;
 
       animationInProgress = true;
-      await cube.realignWithAnimation(lockedFace);
+      await cube.realignWithAnimation(lockedFace, inertia);
       animationInProgress = false;
     }
     moveActivated = false;
     pointerInputState = false;
-    lockedDir = [];
-    lockedFace = "";
+    lockedDir = null;
+    lockedFace = null;
     activeFacelet = null;
-    rotAmount = 0;
-    oldEndPoint = null;
-    endPoint = null;
     accumulator1 = 0;
     accumulator2 = 0;
   }
@@ -121,6 +105,8 @@ const InputHandler = function (
    * @param {MouseEvent} event
    */
   function doMouseMove(event) {
+    let tempTime = new Date().getTime();
+    if (tempTime - oldTime > interval) oldTime = tempTime;
     if (pointerInputState) {
       const dx = event.pageX - lastMouseX;
       const dy = lastMouseY - event.pageY;
@@ -140,172 +126,50 @@ const InputHandler = function (
           );
         }
       } else {
-        //cube.turnFaceABit(faceToMove, dx);
+        let diffVect = [dx, -dy];
 
-        let normalisedRayDir = getNormRayDir(lastMouseX, lastMouseY);
-        //console.log("normalised ray dir " + normalisedRayDir);
-        //The ray starts from the camera in world coordinates
-        let rayStartPoint = [cameraState.cx, cameraState.cy, cameraState.cz];
-
-        let endPoint = activeFacelet.face.intersectRay(
-          rayStartPoint,
-          normalisedRayDir
-        );
-        if (endPoint == null) {
-          console.log("\nA\nA\nA\nA\na\na\na\na\nabatman");
-          //TODO: non so se è possibile smettere di intersecare il piano, però forse va gestito
-        }
-        //provaIntersect(rayStartPoint, normalisedRayDir);
-
-        let diffVect = mathUtils.subtractVectors3(endPoint, startPoint);
-
-        // let distanceStartCamera = mathUtils.distance3(
-        //   startPoint,
-        //   rayStartPoint
-        // );
-        // let distanceEndCamera = mathUtils.distance3(endPoint, rayStartPoint);
-        // let avgDistanceCamera =
-        //   Math.abs(distanceEndCamera - distanceStartCamera) / 2;
-
-        if (lockedDir.length == 0) {
-          //qui chiamo funzione che mi restituisce dir e facce da muovere
-          // let dir1 = [1, 0, 0];
-          // let dir2 = [0, 0, -1];
+        if (lockedDir == null) {
           let [faceName1, dir1] = Object.entries(activeFacelet.directions)[0];
           let [faceName2, dir2] = Object.entries(activeFacelet.directions)[1];
 
-          // function projectDirToScreen(start, dir) {
-          //   let end = mathUtils.sumVectors3(
-          //     start,
-          //     mathUtils.multiplyVectorScalar(dir, 3)
-          //   );
-          //   let startScreen = getPixelCoordinates(start);
-          //   let endScreen = getPixelCoordinates(end);
-          //   return [startScreen, endScreen];
-          // }
+          let temp1 = projectDirToScreen(startPoint, dir1);
+          dir1 = mathUtils.normaliseVector2(temp1[1]);
+          let scalarProduct1 =
+            sensitivity * mathUtils.scalarProduct2(diffVect, dir1); /// mathUtils.vectorNorm2(dir1Origin);
 
-          // let dir1proj = projectDirToScreen(startPoint, dir1);
-          // let dir1Origin = mathUtils.subtractVectors2(dir1proj[1], dir1proj[0]);
-          // let dist2d_1 =
-          //   mathUtils.scalarProduct2([dx, dy], dir1Origin) /
-          //   mathUtils.vectorNorm2(dir1Origin);
-
-          // let dir2proj = projectDirToScreen(startPoint, dir1);
-          // let dir2Origin = mathUtils.subtractVectors2(dir2proj[1], dir2proj[0]);
-          // let dist2d_2 =
-          //   mathUtils.scalarProduct2([dx, dy], dir2Origin) /
-          //   mathUtils.vectorNorm2(dir2Origin);
-
-          // let projStartDir1 = projectPointOnLine(startPoint, dir1);
-          // let projEndDir1 = projectPointOnLine(endPoint, dir1);
-          // let projStartScreen1 = getPixelCoordinates(projStartDir1);
-          // let projEndScreen1 = getPixelCoordinates(projEndDir1);
-          // let screenDistance1 = mathUtils.distance2(
-          //   projStartScreen1,
-          //   projEndScreen1
-          // );
-
-          // let projStartDir2 = projectPointOnLine(startPoint, dir2);
-          // let projEndDir2 = projectPointOnLine(endPoint, dir2);
-          // let projStartScreen2 = getPixelCoordinates(projStartDir2);
-          // let projEndScreen2 = getPixelCoordinates(projEndDir2);
-          // let screenDistance2 = mathUtils.distance2(
-          //   projStartScreen2,
-          //   projEndScreen2
-          // );
-
-          //let dir1 = activeFacelet.directions
-          let scalarProduct1 = mathUtils.scalarProduct3(diffVect, dir1);
-          let scalarProduct2 = mathUtils.scalarProduct3(diffVect, dir2);
+          let temp2 = projectDirToScreen(startPoint, dir2);
+          dir2 = mathUtils.normaliseVector2(temp2[1]);
+          let scalarProduct2 =
+            sensitivity * mathUtils.scalarProduct2(diffVect, dir2); /// mathUtils.vectorNorm2(dir1Origin);
 
           if (
             Math.abs(scalarProduct1) > Math.abs(scalarProduct2) &&
-            Math.abs(accumulator1 + scalarProduct1) > threshold
+            Math.abs(accumulator1 + scalarProduct1) > moveThreshold
           ) {
             lockedDir = dir1;
             lockedFace = faceName1;
             moveActivated = true;
             cube.turnFaceABit(faceName1, accumulator1 + scalarProduct1);
-            //rotAmount += accumulator1 + scalarProduct1;
           } else if (
             Math.abs(scalarProduct2) > Math.abs(scalarProduct1) &&
-            Math.abs(accumulator2 + scalarProduct2) > threshold
+            Math.abs(accumulator2 + scalarProduct2) > moveThreshold
           ) {
             lockedDir = dir2;
             lockedFace = faceName2;
             moveActivated = true;
             cube.turnFaceABit(faceName2, accumulator2 + scalarProduct2);
-            //rotAmount += accumulator2 + scalarProduct2;
           } else {
             accumulator1 += scalarProduct1;
             accumulator2 += scalarProduct2;
           }
         } else {
-          let scalarProduct = mathUtils.scalarProduct3(diffVect, lockedDir);
-          // let sign = Math.sign(scalarProduct);
+          let scalarProduct =
+            sensitivity * mathUtils.scalarProduct2(diffVect, lockedDir);
 
-          // let projStartDir = projectPointOnLine(startPoint, lockedDir);
-          // let projEndDir = projectPointOnLine(endPoint, lockedDir);
-          // let projStartScreen = getPixelCoordinates(projStartDir);
-          // let projEndScreen = getPixelCoordinates(projEndDir);
-          // let screenDistance =
-          //   sign * mathUtils.distance2(projStartScreen, projEndScreen);
-          // console.log(
-          //   "\nscalarProduct: " +
-          //     scalarProduct +
-          //     "\nscreenDistance: " +
-          //     screenDistance +
-          //     "\nprojStartScreen: " +
-          //     projStartScreen +
-          //     "\nprojEndScreen: " +
-          //     projEndScreen +
-          //     "\nmouseXY" +
-          //     [lastMouseX, lastMouseY]
-          // );
-
-          // let tempDiff = mathUtils.subtractVectors3(endPoint, oldEndPoint);
-          // let tempDiffNorm = mathUtils.vectorNorm3(tempDiff);
-
-          //let tempRotAmount = scalarProduct * 10 - rotAmount;
-          let clippedScalarProduct = Math.min(
-            Math.max(scalarProduct * 1000, -maxRot * 1.5),
-            maxRot * 1.5
-          );
-          // let tempRotAmount = Math.min(
-          //   Math.max(clippedScalarProduct, -maxRot * 2),
-          //   maxRot
-          // );
-          // if (tempRotAmount * scalarProduct < 0) {
-          //   console.log("neg");
-          //   tempRotAmount = -tempRotAmount;
-          // }
-
-          cube.turnFaceABit(
-            lockedFace,
-            clippedScalarProduct
-            //clippedScalarProduct * 10
-            //screenDistance / 10 - rotAmount
-            //scalarProduct * 10
-            // ((scalarProduct * 10) / mathUtils.vectorNorm3(diffVect)) *
-            //  Math.sqrt(dx * dx + dy * dy)
-          );
-          //rotAmount += tempRotAmount; //screenDistance / 10 - rotAmount;
+          cube.turnFaceABit(lockedFace, scalarProduct);
         }
-        startPoint = endPoint;
-        //oldEndPoint = endPoint;
       }
     }
-  }
-
-  function projectPointOnLine(p, lineDir) {
-    //A + dot(AP,AB) / dot(AB,AB) * AB
-    let dotABAB = mathUtils.scalarProduct3(lineDir, lineDir);
-    let dotAPAB = mathUtils.scalarProduct3(p, lineDir);
-    let result = []; // lineDir / dotABAB * dotAPAB
-    result[0] = (lineDir[0] / dotABAB) * dotAPAB;
-    result[1] = (lineDir[1] / dotABAB) * dotAPAB;
-    result[2] = (lineDir[2] / dotABAB) * dotAPAB;
-    return result;
   }
 
   function getPixelCoordinates(pParam) {
@@ -319,11 +183,30 @@ const InputHandler = function (
     let pNCD = [];
     pNCD[0] = pp[0] / pp[3];
     pNCD[1] = pp[1] / pp[3];
-    //pNCD[2] = pp[2] / pp[3];
 
     let x = (canvas.width * (pNCD[0] + 1.0)) / 2.0;
     let y = (canvas.height * (1.0 - pNCD[1])) / 2.0;
-    return [Math.round(x), Math.round(y)];
+    return [Math.round(x), Math.round(y), pv[2]]; //to have even more precision, casting to int can be avoided
+    // pv[2] is the z coordinate in camera space: if positive, the point that is gonna be projected on screen is behind us,
+    //  (behind the camera), thus it will be used to invert the direction along which the face can be moved
+  }
+
+  function projectDirToScreen(start, dir) {
+    let end = mathUtils.sumVectors3(
+      start,
+      mathUtils.multiplyVectorScalar3(dir, 10000)
+      //this multiplier sets the precision when converting everything into pixel coordinates
+    );
+    let startScreen = [lastMouseX, lastMouseY];
+    let endScreen = [];
+    let endTemp = getPixelCoordinates(end);
+    endScreen[0] = endTemp[0];
+    endScreen[1] = endTemp[1];
+
+    let screenDir = mathUtils.subtractVectors2(endScreen, startScreen);
+    if (endTemp[2] > 0.0)
+      screenDir = mathUtils.multiplyVectorScalar2(screenDir, -1.0);
+    return [startScreen, screenDir];
   }
 
   function getNormRayDir(x, y) {
@@ -357,7 +240,6 @@ const InputHandler = function (
 
     //We find the direction expressed in world coordinates by multipling with the inverse of the view matrix
     let rayDir = mathUtils.multiplyMatrixVector(viewInv, rayEyeCoords);
-    //console.log("Ray direction " + rayDir);
     return mathUtils.normaliseVector3(rayDir);
   }
 
@@ -367,23 +249,7 @@ const InputHandler = function (
    * @param {KeyboardEvent} e
    */
   const keyFunction = function (e) {
-    /*if (e.code === "Digit1") {
-      cube.turnFaceABit("R", 50);
-      cube.realign("R");
-      //cube.move("R", true);
-    } else if (e.code === "Digit2") {
-      cube.turnFaceABit("R", -50);
-      cube.realign("R");
-      //cube.move("R", false);
-    } else if (e.code === "Digit3") {
-      cube.turnFaceABit("U", 50);
-      cube.realign("U");
-      //cube.move("U", true);
-    } else if (e.code === "Digit4") {
-      cube.turnFaceABit("U", -50);
-      cube.realign("U");
-      //cube.move("U", false);
-    } else*/ if ("FBLRUDMES".includes(e.key.toUpperCase()))
+    if ("FBLRUDMES".includes(e.key.toUpperCase()))
       faceToMove = e.key.toUpperCase();
   };
 

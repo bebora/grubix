@@ -103,8 +103,12 @@ const mathUtils = {
     return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]];
   },
 
-  multiplyVectorScalar: function (v, s) {
+  multiplyVectorScalar3: function (v, s) {
     return [v[0] * s, v[1] * s, v[2] * s];
+  },
+
+  multiplyVectorScalar2: function (v, s) {
+    return [v[0] * s, v[1] * s];
   },
 
   crossProduct3: function (v1, v2) {
@@ -143,6 +147,11 @@ const mathUtils = {
       vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]
     );
     return [vec[0] / magnitude, vec[1] / magnitude, vec[2] / magnitude];
+  },
+
+  normaliseVector2: function (vec) {
+    let magnitude = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]);
+    return [vec[0] / magnitude, vec[1] / magnitude];
   },
 
   /**

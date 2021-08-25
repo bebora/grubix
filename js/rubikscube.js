@@ -251,23 +251,28 @@ class RubiksCube {
     this.faces[faceName].turnABit(angle);
   }
 
-  async realignWithAnimation(faceName) {
+  async realignWithAnimation(faceName, inertia) {
     // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
-    let tempAngle = face.tempAngle = face.tempAngle % 360;
-    let roundedRotationAngle = Math.round((tempAngle) / 90) * 90;
+    let tempAngle = (face.tempAngle = face.tempAngle % 360);
+    let roundedRotationAngle = null;
+    if (inertia) {
+      if (tempAngle < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
+      else roundedRotationAngle = Math.ceil(tempAngle / 90) * 90;
+    } else roundedRotationAngle = Math.round(tempAngle / 90) * 90;
 
-    // Compute the difference to the rounderRotationAngle
+    // Compute the difference to the roundedRotationAngle
     let millisecondsPerAngle = 1;
     let difference = roundedRotationAngle - tempAngle;
 
     // Move the face an angle at a time
-    let turningAngle = difference > 0 ? 1.0 : -1.0;
+    let speed = 5.0;
+    let turningAngle = difference > 0 ? speed : -speed;
     difference = Math.abs(difference);
     let integerDifference = Math.floor(difference);
-    while (integerDifference >= 1) {
+    while (integerDifference >= speed) {
       face.turnABit(turningAngle);
-      integerDifference -= 1;
+      integerDifference -= speed;
       await new Promise((r) => setTimeout(r, millisecondsPerAngle));
     }
     // Complete the rotation with the float part
