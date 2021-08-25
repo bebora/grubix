@@ -239,6 +239,7 @@ class RubiksCube {
     this.faces = null;
     this.facelets = [];
     this.cube = new Cube();
+    this.solvedInitialized = false;
   }
   isSolved() {
     return this.cube.isSolved();
@@ -422,22 +423,41 @@ class RubiksCube {
     }
   }
 
-  async scramble() {
+  /**
+   * Execute the list of moves on the cube
+   * @param {string[]} moves
+   * @param {number} anglePerMs angle moved per ms in the animation
+   */
+  async executeMoves(moves, anglePerMs) {
     const charsToDegree = {
       "": 90,
       "'": -90,
       2: 180,
     };
 
+    for (let move of moves) {
+      let face = move.charAt(0);
+      let angle = charsToDegree[move.charAt(1)];
+      await this.moveWithAnimation(face, anglePerMs, angle);
+    }
+  }
+
+  async scramble() {
     // Random between 20 and 25
     let numMoves = Math.floor(Math.random() * 5) + 20;
     let scrambleMoves = generateScramble(numMoves);
 
-    for (let move of scrambleMoves) {
-      let face = move.charAt(0);
-      let angle = charsToDegree[move.charAt(1)];
-      await this.moveWithAnimation(face, 4, angle);
+    await this.executeMoves(scrambleMoves, 5);
+  }
+
+  async solve() {
+    if (!this.solvedInitialized) {
+      Cube.initSolver();
+      this.solvedInitialized = true;
     }
+
+    let solution = this.cube.solve().split(" ");
+    await this.executeMoves(solution, 1);
   }
 }
 

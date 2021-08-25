@@ -432,6 +432,13 @@ const InputHandler = function (
       await cube.scramble();
       animationInProgress = false;
     });
+
+    const solveButtonElement = document.getElementById("solve");
+    solveButtonElement.addEventListener("click", async function () {
+      animationInProgress = true;
+      await cube.solve();
+      animationInProgress = false;
+    });
   }
 
   return {
