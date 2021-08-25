@@ -32,6 +32,16 @@ const mathUtils = {
   },
 
   /**
+   * Modulo operator
+   * @param {number} n dividend
+   * @param {number} m divisor
+   * @return {number} non negative remainder of n/m (e.g. mod(-12, 10) => 8)
+   */
+  mod: function (n, m) {
+    return ((n % m) + m) % m;
+  },
+
+  /**
    * Obtain 4D identity matrix
    * @returns {number[]} 4D matrix array
    */

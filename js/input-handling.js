@@ -115,7 +115,15 @@ const InputHandler = function (
 
       if (!cubeActivated) {
         if (dx !== 0 || dy !== 0) {
-          cameraState.angle = cameraState.angle + 0.5 * dx;
+          // When the elevation is over 90 degrees or under -90 degrees, the camera is upside down,
+          // and the azimuth angle increment should be the opposite to feel natural
+          let normalizedElevation = mathUtils.mod(cameraState.elevation, 360);
+          let sign = 1;
+          if (normalizedElevation > 90 && normalizedElevation < 270){
+            sign = -1;
+          }
+
+          cameraState.angle = cameraState.angle + 0.5 * dx * sign;
           cameraState.elevation = cameraState.elevation + 0.5 * dy;
           matrices.viewMatrix = projectionUtils.makeView(
             cameraState.cx,
