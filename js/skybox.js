@@ -1,4 +1,4 @@
-import { fetchFile, mathUtils, shaderUtils } from "./utils.js";
+import { fetchFile, mathUtils, projectionUtils, shaderUtils } from "./utils.js";
 import "./webgl-obj-loader.min.js";
 
 /**
@@ -130,7 +130,6 @@ export class SkyBox {
         null
       );
 
-      // TODO Evaluate whether to load them async
       const image = new Image();
       image.src = url;
       let gl = this.gl;
@@ -151,16 +150,28 @@ export class SkyBox {
   /**
    * Render the skybox
    * @param {number[]} perspectiveMatrix
-   * @param {number[]} viewMatrix
+   * @param {{elevation: number, angle: number}} cameraState
    */
-  renderSkyBox(perspectiveMatrix, viewMatrix) {
+  renderSkyBox(perspectiveMatrix, cameraState) {
     this.gl.useProgram(this.program);
 
     this.gl.activeTexture(this.gl.TEXTURE0 + 3);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
     this.gl.uniform1i(this.skyboxTexHandle, 3);
 
-    let viewProjMat = mathUtils.multiplyMatrices(perspectiveMatrix, viewMatrix);
+    // Do not use the translation to create the view matrix since the camera should be at the center
+    let viewMatrixNoTranslation = projectionUtils.makeView(
+      0,
+      0,
+      0,
+      cameraState.elevation,
+      -cameraState.angle
+    );
+    let viewProjMat = mathUtils.multiplyMatrices(
+      perspectiveMatrix,
+      viewMatrixNoTranslation
+    );
+
     let inverseViewProjMatrix = mathUtils.invertMatrix(viewProjMat);
     this.gl.uniformMatrix4fv(
       this.inverseViewProjMatrixHandle,

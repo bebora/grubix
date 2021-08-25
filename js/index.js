@@ -349,17 +349,9 @@ const mainTest = async function () {
       -cameraState.angle
     );
 
-    let viewMatrix = projectionUtils.makeView(
-      cameraState.cx,
-      cameraState.cy,
-      cameraState.cz,
-      cameraState.elevation,
-      -cameraState.angle
-    );
-
     // Matrix to transform light direction from world to camera space
     let lightDirMatrix = mathUtils.invertMatrix(
-      mathUtils.transposeMatrix(viewMatrix)
+      mathUtils.transposeMatrix(matrices.viewMatrix)
     );
 
     // Directional light transformed by the 3x3 submatrix
@@ -437,7 +429,7 @@ const mainTest = async function () {
       );
     }
 
-    skyBox.renderSkyBox(matrices.perspectiveMatrix, viewMatrix);
+    skyBox.renderSkyBox(matrices.perspectiveMatrix, cameraState);
 
     window.requestAnimationFrame(drawFrame);
   }
