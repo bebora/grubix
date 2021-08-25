@@ -1,4 +1,5 @@
 import { mathUtils, fetchFile, transformUtils } from "./utils.js";
+import { generateScramble } from "./scramble.js";
 import "./webgl-obj-loader.min.js";
 
 const rotMatrixDict = {
@@ -30,15 +31,15 @@ class Piece {
 
 /**
  * Initialize every piece of the cube
- * @param {string} assetDir
+ * @param {string} meshDir
  * @return {Promise<*[]>}
  */
-async function initializePieces(assetDir) {
+async function initializePieces(meshDir) {
   let pieceArray = [];
 
   // Fetch meshes in parallel and sequentially process them as they are ready
   let promises = [...Array(26).keys()].map((id) =>
-    fetchFile(`${assetDir}piece${id}.obj`)
+    fetchFile(`${meshDir}piece${id}.obj`)
   );
 
   // qui importo gli obj, per ogni obj faccio un oggetto Piece
@@ -238,6 +239,7 @@ class RubiksCube {
     this.faces = null;
     this.facelets = [];
     this.cube = new Cube();
+    this.solvedInitialized = false;
   }
   isSolved() {
     return this.cube.isSolved();
@@ -251,31 +253,37 @@ class RubiksCube {
     this.faces[faceName].turnABit(angle);
   }
 
-  async realignWithAnimation(faceName, inertia) {
+  /**
+   * Rotate the given face with an animation, re-aligning it.
+   * @param {string} faceName the name of the face to rotate
+   * @param {number} anglePerMs the angle per ms to rotate (integer)
+   * @param {number} angle optional angle to which rotate the face. Defaults to 0.
+   * @returns {Promise<void>}
+   */
+  async moveWithAnimation(faceName, inertia, anglePerMs = 5, angle = 0) {
     // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
     let tempAngle = (face.tempAngle = face.tempAngle % 360);
     let roundedRotationAngle = null;
+
     if (inertia) {
       if (tempAngle < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
       else roundedRotationAngle = Math.ceil(tempAngle / 90) * 90;
-    } else roundedRotationAngle = Math.round(tempAngle / 90) * 90;
+    } else roundedRotationAngle = Math.round(tempAngle / 90) * 90 + angle;
 
-    // Compute the difference to the roundedRotationAngle
-    let millisecondsPerAngle = 1;
+    // Compute the difference to the rounderRotationAngle
     let difference = roundedRotationAngle - tempAngle;
 
     // Move the face an angle at a time
-    let speed = 5.0;
-    let turningAngle = difference > 0 ? speed : -speed;
+    let turningAngle = difference > 0 ? anglePerMs : -1 * anglePerMs;
     difference = Math.abs(difference);
     let integerDifference = Math.floor(difference);
-    while (integerDifference >= speed) {
+    while (integerDifference >= anglePerMs) {
       face.turnABit(turningAngle);
-      integerDifference -= speed;
-      await new Promise((r) => setTimeout(r, millisecondsPerAngle));
+      integerDifference -= anglePerMs;
+      await new Promise((r) => setTimeout(r, 1));
     }
-    // Complete the rotation with the float part
+    // Complete the rotation with the remaining part
     face.turnABit(roundedRotationAngle - face.tempAngle);
 
     // Change the scene graph and cube state if needed
@@ -419,16 +427,53 @@ class RubiksCube {
       this.slotArray[i].faces = tempFaces;
     }
   }
+
+  /**
+   * Execute the list of moves on the cube
+   * @param {string[]} moves
+   * @param {number} anglePerMs angle moved per ms in the animation
+   */
+  async executeMoves(moves, anglePerMs) {
+    const charsToDegree = {
+      "": 90,
+      "'": -90,
+      2: 180,
+    };
+
+    for (let move of moves) {
+      let face = move.charAt(0);
+      let angle = charsToDegree[move.charAt(1)];
+      await this.moveWithAnimation(face, false, anglePerMs, angle);
+    }
+  }
+
+  async scramble() {
+    // Random between 20 and 25
+    let numMoves = Math.floor(Math.random() * 5) + 20;
+    let scrambleMoves = generateScramble(numMoves);
+
+    await this.executeMoves(scrambleMoves, 5);
+  }
+
+  async solve() {
+    if (!this.solvedInitialized) {
+      Cube.initSolver();
+      this.solvedInitialized = true;
+    }
+
+    let solution = this.cube.solve().split(" ");
+    await this.executeMoves(solution, 1);
+  }
 }
 
 /**
  * Initialize cube
- * @param {string} assetDir
+ * @param {string} meshDir
  * @return {Promise<RubiksCube>}
  */
-async function initializeCube(assetDir) {
+async function initializeCube(meshDir) {
   let rubiksCube = new RubiksCube();
-  rubiksCube.pieceArray = await initializePieces(assetDir);
+  rubiksCube.pieceArray = await initializePieces(meshDir);
   rubiksCube.slotArray = initializeSlots(rubiksCube.pieceArray);
   rubiksCube.faces = initializeFaces(rubiksCube.slotArray);
   rubiksCube.setBoundsToPieces();

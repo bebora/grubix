@@ -89,7 +89,7 @@ const InputHandler = function (
       pointerInputState = false;
 
       animationInProgress = true;
-      await cube.realignWithAnimation(lockedFace, inertia);
+      await cube.moveWithAnimation(lockedFace, inertia);
       animationInProgress = false;
     }
     moveActivated = false;
@@ -291,6 +291,20 @@ const InputHandler = function (
     canvas.addEventListener("mousemove", doMouseMove, false);
     window.addEventListener("keyup", keyFunction, false);
     canvas.addEventListener("wheel", doWheel, false);
+
+    const scrambleButtonElement = document.getElementById("scramble");
+    scrambleButtonElement.addEventListener("click", async function () {
+      animationInProgress = true;
+      await cube.scramble();
+      animationInProgress = false;
+    });
+
+    const solveButtonElement = document.getElementById("solve");
+    solveButtonElement.addEventListener("click", async function () {
+      animationInProgress = true;
+      await cube.solve();
+      animationInProgress = false;
+    });
   }
 
   return {

@@ -8,13 +8,13 @@ export class SkyBox {
   /**
    *
    * @param {WebGL2RenderingContext} gl the WebGl rendering context
-   * @param {string} assetDir the directory of the assets
+   * @param {string} cubemapDir the directory of the cubemaps
    * @param {string} shaderDir the directory of the shaders
    */
-  constructor(gl, assetDir, shaderDir) {
+  constructor(gl, cubemapDir, shaderDir) {
     this.vao = gl.createVertexArray();
     this.gl = gl;
-    this.assetDir = assetDir;
+    this.cubemapDir = cubemapDir;
     this.shaderDir = shaderDir;
   }
 
@@ -67,38 +67,38 @@ export class SkyBox {
       0
     );
 
-    this.loadTexture();
+    await this.loadTexture();
   }
 
   /**
    * Retrieve the texture targets together with the url of the file
-   * @returns {{target: WebGL2RenderingContext.GL_ENUM, url: string}[]}
+   * @returns {{target: GLenum, url: string}[]}
    */
   getTexturesWithTarget() {
     return [
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-        url: `${this.assetDir}skybox/right.jpg`,
+        url: `${this.cubemapDir}right.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-        url: `${this.assetDir}skybox/left.jpg`,
+        url: `${this.cubemapDir}left.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-        url: `${this.assetDir}skybox/top.jpg`,
+        url: `${this.cubemapDir}top.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-        url: `${this.assetDir}skybox/bottom.jpg`,
+        url: `${this.cubemapDir}bottom.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-        url: `${this.assetDir}skybox/front.jpg`,
+        url: `${this.cubemapDir}front.jpg`,
       },
       {
         target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-        url: `${this.assetDir}skybox/back.jpg`,
+        url: `${this.cubemapDir}back.jpg`,
       },
     ];
   }
@@ -106,7 +106,7 @@ export class SkyBox {
   /**
    * Render the Skybox in the given canvas
    */
-  loadTexture() {
+  async loadTexture() {
     // Load the texture
     let texture = this.gl.createTexture();
     this.texture = texture;
@@ -114,7 +114,7 @@ export class SkyBox {
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
     const texturesWithTarget = this.getTexturesWithTarget();
-    texturesWithTarget.forEach((textureWithTarget) => {
+    for (const textureWithTarget of texturesWithTarget) {
       const { target, url } = textureWithTarget;
 
       // render in the texture, before it's loaded
@@ -130,19 +130,16 @@ export class SkyBox {
         null
       );
 
-      // Asynchronously load an image
-      // TODO Avoid to load the images in an event listener, but return func to load them async together with normal map
+      // TODO Evaluate whether to load them async
       const image = new Image();
       image.src = url;
       let gl = this.gl;
-      image.addEventListener("load", function () {
-        // Now that the image has loaded upload it to the texture.
-        gl.activeTexture(gl.TEXTURE0 + 3);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-      });
-    });
+      await image.decode();
+      // Now that the image has loaded upload it to the texture.
+      gl.activeTexture(gl.TEXTURE0 + 3);
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    }
     this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
     this.gl.texParameteri(
       this.gl.TEXTURE_CUBE_MAP,
@@ -167,7 +164,7 @@ export class SkyBox {
     let inverseViewProjMatrix = mathUtils.invertMatrix(viewProjMat);
     this.gl.uniformMatrix4fv(
       this.inverseViewProjMatrixHandle,
-      this.gl.FALSE,
+      false,
       mathUtils.transposeMatrix(inverseViewProjMatrix)
     );
 
