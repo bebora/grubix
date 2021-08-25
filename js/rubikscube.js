@@ -1,4 +1,5 @@
 import { mathUtils, fetchFile, transformUtils } from "./utils.js";
+import { generateScramble } from "./scramble.js";
 import "./webgl-obj-loader.min.js";
 
 const rotMatrixDict = {
@@ -251,26 +252,32 @@ class RubiksCube {
     this.faces[faceName].turnABit(angle);
   }
 
-  async realignWithAnimation(faceName) {
+  /**
+   * Rotate the given face with an animation, re-aligning it.
+   * @param {string} faceName the name of the face to rotate
+   * @param {number} anglePerMs the angle per ms to rotate (integer)
+   * @param {number} angle optional angle to which rotate the face. Defaults to 0.
+   * @returns {Promise<void>}
+   */
+  async moveWithAnimation(faceName, anglePerMs = 2, angle = 0) {
     // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
-    let tempAngle = face.tempAngle = face.tempAngle % 360;
-    let roundedRotationAngle = Math.round((tempAngle) / 90) * 90;
+    let tempAngle = (face.tempAngle = face.tempAngle % 360);
+    let roundedRotationAngle = Math.round(tempAngle / 90) * 90 + angle;
 
     // Compute the difference to the rounderRotationAngle
-    let millisecondsPerAngle = 1;
     let difference = roundedRotationAngle - tempAngle;
 
     // Move the face an angle at a time
-    let turningAngle = difference > 0 ? 1.0 : -1.0;
+    let turningAngle = difference > 0 ? anglePerMs : -1 * anglePerMs;
     difference = Math.abs(difference);
     let integerDifference = Math.floor(difference);
-    while (integerDifference >= 1) {
+    while (integerDifference >= anglePerMs) {
       face.turnABit(turningAngle);
-      integerDifference -= 1;
-      await new Promise((r) => setTimeout(r, millisecondsPerAngle));
+      integerDifference -= anglePerMs;
+      await new Promise((r) => setTimeout(r, 1));
     }
-    // Complete the rotation with the float part
+    // Complete the rotation with the remaining part
     face.turnABit(roundedRotationAngle - face.tempAngle);
 
     // Change the scene graph and cube state if needed
@@ -412,6 +419,24 @@ class RubiksCube {
           tempFaces[faceName] = faceObj;
       }
       this.slotArray[i].faces = tempFaces;
+    }
+  }
+
+  async scramble() {
+    const charsToDegree = {
+      "": 90,
+      "'": -90,
+      2: 180,
+    };
+
+    // Random between 20 and 25
+    let numMoves = Math.floor(Math.random() * 5) + 20;
+    let scrambleMoves = generateScramble(numMoves);
+
+    for (let move of scrambleMoves) {
+      let face = move.charAt(0);
+      let angle = charsToDegree[move.charAt(1)];
+      await this.moveWithAnimation(face, 4, angle);
     }
   }
 }
