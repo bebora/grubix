@@ -1,6 +1,6 @@
-import { mathUtils, fetchFile, transformUtils } from "./utils.js";
-import { generateScramble } from "./scramble.js";
-import "./webgl-obj-loader.min.js";
+import { mathUtils, fetchFile, transformUtils } from "../utils.js";
+import { generateScramble } from "../lib/scramble.js";
+import "../lib/webgl-obj-loader.min.js";
 
 const rotMatrixDict = {
   x: transformUtils.makeRotateXMatrix,
@@ -232,7 +232,7 @@ function initializeFaces(slotArray) {
   return faces;
 }
 
-class RubiksCube {
+class CubeState {
   constructor() {
     this.pieceArray = null;
     this.slotArray = null;
@@ -240,6 +240,8 @@ class RubiksCube {
     this.facelets = [];
     this.cube = new Cube();
     this.solvedInitialized = false;
+
+    this.transitionInProgress = false;
   }
   isSolved() {
     return this.cube.isSolved();
@@ -256,6 +258,7 @@ class RubiksCube {
   /**
    * Rotate the given face with an animation, re-aligning it.
    * @param {string} faceName the name of the face to rotate
+   * @param {boolean} inertia
    * @param {number} anglePerMs the angle per ms to rotate (integer)
    * @param {number} angle optional angle to which rotate the face. Defaults to 0.
    * @returns {Promise<void>}
@@ -469,21 +472,21 @@ class RubiksCube {
 /**
  * Initialize cube
  * @param {string} meshDir
- * @return {Promise<RubiksCube>}
+ * @return {Promise<CubeState>}
  */
 async function initializeCube(meshDir) {
-  let rubiksCube = new RubiksCube();
-  rubiksCube.pieceArray = await initializePieces(meshDir);
-  rubiksCube.slotArray = initializeSlots(rubiksCube.pieceArray);
-  rubiksCube.faces = initializeFaces(rubiksCube.slotArray);
-  rubiksCube.setBoundsToPieces();
-  rubiksCube.setFacesToSlots();
-  rubiksCube.setFacelets();
-  rubiksCube.setDirectionsToFacelets();
-  return rubiksCube;
+  let cubeState = new CubeState();
+  cubeState.pieceArray = await initializePieces(meshDir);
+  cubeState.slotArray = initializeSlots(cubeState.pieceArray);
+  cubeState.faces = initializeFaces(cubeState.slotArray);
+  cubeState.setBoundsToPieces();
+  cubeState.setFacesToSlots();
+  cubeState.setFacelets();
+  cubeState.setDirectionsToFacelets();
+  return cubeState;
 }
 
-export { initializeCube, RubiksCube };
+export { initializeCube, CubeState };
 /*
     esempio:
 

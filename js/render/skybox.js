@@ -1,5 +1,10 @@
-import { fetchFile, mathUtils, projectionUtils, shaderUtils } from "./utils.js";
-import "./webgl-obj-loader.min.js";
+import {
+  fetchFile,
+  mathUtils,
+  projectionUtils,
+  shaderUtils,
+} from "../utils.js";
+import "../lib/webgl-obj-loader.min.js";
 
 /**
  * Manage the rendering of a static skybox
@@ -150,7 +155,7 @@ export class SkyBox {
   /**
    * Render the skybox
    * @param {number[]} perspectiveMatrix
-   * @param {{elevation: number, angle: number}} cameraState
+   * @param {CameraState} cameraState
    */
   renderSkyBox(perspectiveMatrix, cameraState) {
     this.gl.useProgram(this.program);
@@ -160,13 +165,7 @@ export class SkyBox {
     this.gl.uniform1i(this.skyboxTexHandle, 3);
 
     // Do not use the translation to create the view matrix since the camera should be at the center
-    let viewMatrixNoTranslation = projectionUtils.makeView(
-      0,
-      0,
-      0,
-      cameraState.elevation,
-      -cameraState.angle
-    );
+    let viewMatrixNoTranslation = cameraState.viewMatrixCenter;
     let viewProjMat = mathUtils.multiplyMatrices(
       perspectiveMatrix,
       viewMatrixNoTranslation

@@ -1,15 +1,11 @@
-import {
-  expandCanvasToContainer,
-  parseHexColor,
-  fetchFile,
-  mathUtils,
-  projectionUtils,
-  shaderUtils,
-} from "./utils.js";
-import { initializeCube } from "./rubikscube.js";
-import { InputHandler } from "./input-handling.js";
-import { SkyBox } from "./skybox.js";
-import "./webgl-obj-loader.min.js";
+import { parseHexColor, fetchFile, mathUtils, shaderUtils } from "./utils.js";
+import { initializeCube } from "./state/cube.js";
+import { MouseHandler } from "./ui/mouse.js";
+import { CameraState } from "./state/camera.js";
+import { SkyBox } from "./render/skybox.js";
+import "./lib/webgl-obj-loader.min.js";
+import { CanvasState } from "./state/canvas.js";
+import { Window } from "./ui/window.js";
 
 // TODO move to appropriate file this function
 let optionToLightDirection = function (opt) {
@@ -62,50 +58,12 @@ let materialDiffuseColor = parseHexColor(
   materialDiffuseColorInputElement.value
 );
 
-//let initialCx = 4.5;
-//let initialCy = 0.0;
-//let initialCz = 10.0;
-let initialElevation = 0.0;
-let initialAngle = 0.0;
-let initialLookRadius = 9;
-
-let initialCz =
-  initialLookRadius *
-  Math.cos(mathUtils.degToRad(-initialAngle)) *
-  Math.cos(mathUtils.degToRad(-initialElevation));
-let initialCx =
-  initialLookRadius *
-  Math.sin(mathUtils.degToRad(-initialAngle)) *
-  Math.cos(mathUtils.degToRad(-initialElevation));
-let initialCy =
-  initialLookRadius * Math.sin(mathUtils.degToRad(-initialElevation));
-
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
 let gl = canvas.getContext("webgl2");
 if (gl === null) {
   window.alert("Error getting GL context");
 }
-
-window.addEventListener("resize", () => {
-  expandCanvasToContainer(canvas, gl);
-});
-
-expandCanvasToContainer(canvas, gl);
-
-let sidebarOpen = true;
-document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
-  const parent = e.target.parentElement;
-  if (sidebarOpen) {
-    parent.style.minWidth = "0";
-    parent.style.maxWidth = "50px";
-  } else {
-    parent.style.minWidth = "20%";
-    parent.style.maxWidth = "100%";
-  }
-  sidebarOpen = !sidebarOpen;
-  expandCanvasToContainer(canvas, gl);
-});
 
 const mainTest = async function () {
   const path = window.location.pathname;
@@ -119,33 +77,34 @@ const mainTest = async function () {
 
   let cube = await initializeCube(meshDir);
 
-  const cameraState = {
-    elevation: initialElevation,
-    angle: initialAngle,
-    lookRadius: initialLookRadius,
-    cx: initialCx,
-    cy: initialCy,
-    cz: initialCz,
-  };
+  // Initialize the states
+  const cameraState = new CameraState();
+  const canvasState = new CanvasState(gl);
+
+  // Initialize UI managers
+  new Window(canvasState);
+
+  let sidebarOpen = true;
+  document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
+    const parent = e.target.parentElement;
+    if (sidebarOpen) {
+      parent.style.minWidth = "0";
+      parent.style.maxWidth = "50px";
+    } else {
+      parent.style.minWidth = "20%";
+      parent.style.maxWidth = "100%";
+    }
+    sidebarOpen = !sidebarOpen;
+    canvasState.expandToParent();
+  });
 
   const matrices = {
-    perspectiveMatrix: projectionUtils.makePerspective(
-      90,
-      canvas.width / canvas.height,
-      0.1,
-      100.0
-    ),
-    viewMatrix: projectionUtils.makeView(
-      cameraState.cx,
-      cameraState.cy,
-      cameraState.cz,
-      cameraState.elevation,
-      -cameraState.angle
-    ),
+    perspectiveMatrix: canvasState.perspectiveMatrix,
+    viewMatrix: cameraState.viewMatrix,
   };
 
   // Start listening to user input
-  const inputHandler = new InputHandler(canvas, cube, cameraState, matrices);
+  const inputHandler = new MouseHandler(gl.canvas, cube, cameraState, matrices);
   inputHandler.initInputEventListeners();
 
   const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
@@ -315,24 +274,7 @@ const mainTest = async function () {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
 
-    matrices.perspectiveMatrix = projectionUtils.makePerspective(
-      90,
-      gl.canvas.width / gl.canvas.height,
-      0.1,
-      100.0
-    );
-
-    cameraState.cz =
-      cameraState.lookRadius *
-      Math.cos(mathUtils.degToRad(-cameraState.angle)) *
-      Math.cos(mathUtils.degToRad(-cameraState.elevation));
-    cameraState.cx =
-      cameraState.lookRadius *
-      Math.sin(mathUtils.degToRad(-cameraState.angle)) *
-      Math.cos(mathUtils.degToRad(-cameraState.elevation));
-    cameraState.cy =
-      cameraState.lookRadius *
-      Math.sin(mathUtils.degToRad(-cameraState.elevation));
+    matrices.perspectiveMatrix = canvasState.perspectiveMatrix;
 
     const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
     const ambientUpVector = [
@@ -341,13 +283,7 @@ const mainTest = async function () {
       -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
     ];
 
-    matrices.viewMatrix = projectionUtils.makeView(
-      cameraState.cx,
-      cameraState.cy,
-      cameraState.cz,
-      cameraState.elevation,
-      -cameraState.angle
-    );
+    matrices.viewMatrix = cameraState.viewMatrix;
 
     // Matrix to transform light direction from world to camera space
     let lightDirMatrix = mathUtils.invertMatrix(
