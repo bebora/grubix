@@ -1,42 +1,33 @@
-import { RubiksCube } from "./rubikscube.js";
-import { mathUtils, projectionUtils } from "./utils.js";
+import { CubeState } from "../state/cube.js";
+import { MouseQueue, mathUtils } from "../utils.js";
 
 /**
- * Create a handler for user input
- * @param {HTMLCanvasElement} canvasParam
- * @param {RubiksCube} cubeParam
- * @param {Object} cameraStateParam contains elevation, angle and lookRadius of camera
+ * Create a handler for mouse input
+ * @param {HTMLCanvasElement} canvas
+ * @param {CubeState} cube
+ * @param {CameraState} cameraState state of the camera
+ * @param {{viewMatrix: number[], perspectiveMatrix: number[]}} matrices
  */
-const InputHandler = function (
-  canvasParam,
-  cubeParam,
-  cameraStateParam,
-  matricesParam
-) {
+const MouseHandler = function (canvas, cube, cameraState, matrices) {
   let pointerInputState = false;
   let lastMouseX = -100,
     lastMouseY = -100;
-  const canvas = canvasParam;
-  const cube = cubeParam;
-  const cameraState = cameraStateParam;
-  const matrices = matricesParam;
   let cubeActivated = false;
   let moveActivated = false;
   let startPoint = [];
-  let sensitivity = 0.5; // TODO: magari slider nella GUI per regolarla
+  let sensitivity = 0.5;
   let moveThreshold = 7 * sensitivity;
   let lockedDir = null;
   let lockedFace = null;
   let activeFacelet = null;
   let accumulator1 = 0;
   let accumulator2 = 0;
-  let animationInProgress = false;
   let currentTime = null;
   let oldTime = null;
   let startX = null;
   let startY = null;
   let inertiaThreshold = 0.8;
-  let interval = 100;
+  let mouseQueue = new MouseQueue(50);
 
   // Mouse events
   /**
@@ -51,19 +42,16 @@ const InputHandler = function (
 
     let normalisedRayDir = getNormRayDir(lastMouseX, lastMouseY);
     //The ray starts from the camera in world coordinates
-    let rayStartPoint = [cameraState.cx, cameraState.cy, cameraState.cz];
+    let cameraPosition = cameraState.position;
+    let rayStartPoint = [cameraPosition.x, cameraPosition.y, cameraPosition.z];
     let [intersectedFacelet, intersectionPoint] = cube.intersectFacelets(
       rayStartPoint,
       normalisedRayDir
     );
-    if (!animationInProgress && intersectedFacelet != null) {
+    if (!cube.transitionInProgress && intersectedFacelet != null) {
       activeFacelet = intersectedFacelet;
       cubeActivated = true;
       startPoint = intersectionPoint;
-      // console.log(
-      //   "mouse DOWN, pixel coordinates: " +
-      //     getPixelCoordinates(intersectionPoint)
-      // );
     } else {
       cubeActivated = false;
     }
@@ -80,17 +68,27 @@ const InputHandler = function (
     lastMouseY = -100;
 
     if (moveActivated) {
+      // Compute inertia
       currentTime = new Date().getTime();
-      let deltaTime = currentTime - oldTime;
-      let deltaSpace = mathUtils.distance2([startX, startY], [endX, endY]);
-      let speed = deltaSpace / deltaTime;
-      let inertia = speed > inertiaThreshold;
+      let mouseRecord = mouseQueue.getValidElement(currentTime);
+      let speed = null;
+      if (mouseRecord !== null) {
+        let deltaTime = currentTime - mouseRecord.time;
+        let deltaSpace = mathUtils.distance2(
+          [mouseRecord.x, mouseRecord.y],
+          [endX, endY]
+        );
+        speed = deltaSpace / deltaTime;
+      }
+      let inertia = speed ? speed > inertiaThreshold : false;
+      console.log(inertia);
+
       moveActivated = false;
       pointerInputState = false;
-
-      animationInProgress = true;
+      mouseQueue = new MouseQueue(50);
+      cube.transitionInProgress = true;
       await cube.moveWithAnimation(lockedFace, inertia);
-      animationInProgress = false;
+      cube.transitionInProgress = false;
     }
     moveActivated = false;
     pointerInputState = false;
@@ -105,8 +103,6 @@ const InputHandler = function (
    * @param {MouseEvent} event
    */
   function doMouseMove(event) {
-    let tempTime = new Date().getTime();
-    if (tempTime - oldTime > interval) oldTime = tempTime;
     if (pointerInputState) {
       const dx = event.pageX - lastMouseX;
       const dy = lastMouseY - event.pageY;
@@ -119,21 +115,24 @@ const InputHandler = function (
           // and the azimuth angle increment should be the opposite to feel natural
           let normalizedElevation = mathUtils.mod(cameraState.elevation, 360);
           let sign = 1;
-          if (normalizedElevation > 90 && normalizedElevation < 270){
+          if (normalizedElevation > 90 && normalizedElevation < 270) {
             sign = -1;
           }
 
-          cameraState.angle = cameraState.angle + 0.5 * dx * sign;
-          cameraState.elevation = cameraState.elevation + 0.5 * dy;
-          matrices.viewMatrix = projectionUtils.makeView(
-            cameraState.cx,
-            cameraState.cy,
-            cameraState.cz,
-            cameraState.elevation,
-            -cameraState.angle
+          cameraState.update(
+            cameraState.elevation + 0.5 * dy,
+            cameraState.angle + 0.5 * dx * sign,
+            cameraState.lookRadius
           );
         }
       } else {
+        // Record mouse state
+        mouseQueue.push({
+          x: event.clientX,
+          y: event.clientY,
+          time: new Date().getTime(),
+        });
+
         let diffVect = [dx, -dy];
 
         if (lockedDir == null) {
@@ -251,16 +250,6 @@ const InputHandler = function (
     return mathUtils.normaliseVector3(rayDir);
   }
 
-  // Keyboard events
-  /**
-   * Handle keyboard input
-   * @param {KeyboardEvent} e
-   */
-  const keyFunction = function (e) {
-    if ("FBLRUDMES".includes(e.key.toUpperCase()))
-      faceToMove = e.key.toUpperCase();
-  };
-
   /**
    * Handle wheel zoom event
    * @param {WheelEvent} event
@@ -268,50 +257,31 @@ const InputHandler = function (
   const doWheel = function (event) {
     event.preventDefault();
     const increment = event.deltaY * 0.0005 * cameraState.lookRadius; // Increment increase as radius increase to keep the "scaling" effect consistent
-    cameraState.lookRadius = Math.min(
+    let newLookRadius = Math.min(
       Math.max(cameraState.lookRadius + increment, 5.5),
       20
     );
-    cameraState.cz =
-      cameraState.lookRadius *
-      Math.cos(mathUtils.degToRad(-cameraState.angle)) *
-      Math.cos(mathUtils.degToRad(-cameraState.elevation));
-    cameraState.cx =
-      cameraState.lookRadius *
-      Math.sin(mathUtils.degToRad(-cameraState.angle)) *
-      Math.cos(mathUtils.degToRad(-cameraState.elevation));
-    cameraState.cy =
-      cameraState.lookRadius *
-      Math.sin(mathUtils.degToRad(-cameraState.elevation));
-
-    matrices.viewMatrix = projectionUtils.makeView(
-      cameraState.cx,
-      cameraState.cy,
-      cameraState.cz,
-      cameraState.elevation,
-      -cameraState.angle
-    );
+    cameraState.update(cameraState.elevation, cameraState.angle, newLookRadius);
   };
 
   function initInputEventListeners() {
     canvas.addEventListener("mousedown", doMouseDown, false);
     canvas.addEventListener("mouseup", doMouseUp, false);
     canvas.addEventListener("mousemove", doMouseMove, false);
-    window.addEventListener("keyup", keyFunction, false);
     canvas.addEventListener("wheel", doWheel, false);
 
     const scrambleButtonElement = document.getElementById("scramble");
     scrambleButtonElement.addEventListener("click", async function () {
-      animationInProgress = true;
+      cube.transitionInProgress = true;
       await cube.scramble();
-      animationInProgress = false;
+      cube.transitionInProgress = false;
     });
 
     const solveButtonElement = document.getElementById("solve");
     solveButtonElement.addEventListener("click", async function () {
-      animationInProgress = true;
+      cube.transitionInProgress = true;
       await cube.solve();
-      animationInProgress = false;
+      cube.transitionInProgress = false;
     });
   }
 
@@ -320,4 +290,4 @@ const InputHandler = function (
   };
 };
 
-export { InputHandler };
+export { MouseHandler };

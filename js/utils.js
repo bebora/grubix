@@ -1,16 +1,4 @@
 /**
- * Expand canvas to fill its parent and adjust the viewport size
- * @param {HTMLCanvasElement} canvas
- * @param {WebGL2RenderingContext} gl
- */
-const expandCanvasToContainer = function (canvas, gl) {
-  const parent = canvas.parentElement;
-  canvas.width = parent.clientWidth;
-  canvas.height = parent.clientHeight;
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-};
-
-/**
  * Obtain RGB values from hexadecimal notation
  * @param {string} color color in hexadecimal notation
  * @return {number[]} array of RGB values between 0 and 1
@@ -758,12 +746,53 @@ const shaderUtils = {
   },
 };
 
+/**
+ * Represent a queue of mouse events with their timestamp and mouse position
+ * @param size the size of the queue
+ * @constructor
+ */
+function MouseQueue(size) {
+  this.queue = [];
+  this.interval = 100;
+
+  /**
+   * Push the mouse recording in queue
+   * @param {{time: number, x: number, y: number}} el
+   */
+  this.push = function (el) {
+    if (this.queue.length === size) this.queue.shift();
+
+    this.queue.push(el);
+  };
+
+  this.getValidElement = function (currentTime) {
+    if (this.queue.length === 0) return null;
+
+    // Otherwise, search an element closer to ~100 ms to get a good estimation of the inertia
+    let distancesToInterval = this.queue.map((el) =>
+      Math.abs(currentTime - el.time - this.interval)
+    );
+    let lowest = 0;
+    for (let i = 1; i < distancesToInterval.length; i++) {
+      if (distancesToInterval[i] < distancesToInterval[lowest]) lowest = i;
+    }
+    let mouseRecord = this.queue[lowest];
+
+    // If the lowest element is more than 200ms old or not enough elements, no inertia since the user didn't move the mouse
+    if (currentTime - mouseRecord.time > 200) {
+      return null;
+    }
+    console.log("FOUND", this.queue[lowest].time - currentTime);
+    return this.queue[lowest];
+  };
+}
+
 export {
-  expandCanvasToContainer,
   parseHexColor,
   mathUtils,
   transformUtils,
   projectionUtils,
   fetchFile,
   shaderUtils,
+  MouseQueue,
 };
