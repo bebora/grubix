@@ -144,12 +144,15 @@ export function LightRenderer(lightState, gl, program) {
         let parameters = pointLights[i].getParameters();
 
         // Positional light transformed by the view matrix
-        let positionLightTransformed = mathUtils.multiplyMatrices(viewMatrix, [
-          parameters.position[0],
-          parameters.position[1],
-          parameters.position[2],
-          1,
-        ]);
+        let positionLightTransformed = mathUtils.multiplyMatrixVector(
+          viewMatrix,
+          [
+            parameters.position[0],
+            parameters.position[1],
+            parameters.position[2],
+            1,
+          ]
+        );
         gl.uniform1i(uniforms.point[i].valid, 1);
         gl.uniform3f(
           uniforms.point[i].position,
@@ -176,12 +179,15 @@ export function LightRenderer(lightState, gl, program) {
           parameters.direction
         );
         // Positional light transformed by the view matrix
-        let positionLightTransformed = mathUtils.multiplyMatrices(viewMatrix, [
-          parameters.position[0],
-          parameters.position[1],
-          parameters.position[2],
-          1,
-        ]);
+        let positionLightTransformed = mathUtils.multiplyMatrixVector(
+          viewMatrix,
+          [
+            parameters.position[0],
+            parameters.position[1],
+            parameters.position[2],
+            1,
+          ]
+        );
         gl.uniform1i(uniforms.spot[i].valid, 1);
         gl.uniform3f(
           uniforms.spot[i].direction,
