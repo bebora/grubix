@@ -258,7 +258,7 @@ class CubeState {
   /**
    * Rotate the given face with an animation, re-aligning it.
    * @param {string} faceName the name of the face to rotate
-   * @param {boolean} inertia
+   * @param {number} inertia
    * @param {number} anglePerMs the angle per ms to rotate (integer)
    * @param {number} angle optional angle to which rotate the face. Defaults to 0.
    * @returns {Promise<void>}

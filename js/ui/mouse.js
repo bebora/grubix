@@ -67,20 +67,22 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
       // Compute inertia
       currentTime = new Date().getTime();
       let mouseRecord = mouseQueue.getValidElement(currentTime);
-      let diffVect = [endX - mouseRecord.x, endY - mouseRecord.y];
-      let inertiaDir = Math.sign(mathUtils.scalarProduct2(diffVect, lockedDir));
 
-      let speed = null;
+      let inertia = false;
       if (mouseRecord !== null) {
         let deltaTime = currentTime - mouseRecord.time;
         let deltaSpace = mathUtils.distance2(
           [mouseRecord.x, mouseRecord.y],
           [endX, endY]
         );
-        speed = deltaSpace / deltaTime;
+        let speed = deltaSpace / deltaTime;
+        let diffVect = [endX - mouseRecord.x, endY - mouseRecord.y];
+        let inertiaDir = Math.sign(
+          mathUtils.scalarProduct2(diffVect, lockedDir)
+        );
+        inertia = speed ? (speed > inertiaThreshold ? inertiaDir : 0) : 0;
+        console.log(inertia + "\n" + inertiaDir);
       }
-      let inertia = speed ? (speed > inertiaThreshold ? inertiaDir : 0) : 0;
-      console.log(inertia + "\n" + inertiaDir);
 
       moveActivated = false;
       pointerInputState = false;

@@ -119,8 +119,6 @@ void main() {
     LightInfo spotLight = spotLightInfo(spotLights[i].position, spotLights[i].direction, spotLights[i].decay, spotLights[i].target, spotLights[i].color, spotLights[i].coneOut, spotLights[i].coneIn);
     diffuseContribute += computeDiffuse(spotLight, compoundDiffuseColour, norm);
   }
-  diffuseContribute = vec3(0,0,0);
-
   vec3 ambientContribute;
   if (ambientType == 0) {
     ambientContribute = mainAmbientColor * compoundDiffuseColour;
