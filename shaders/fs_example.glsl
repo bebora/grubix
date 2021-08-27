@@ -61,7 +61,8 @@ LightInfo directLightInfo(vec3 direction, vec3 color) {
 }
 
 LightInfo pointLightInfo(vec3 position, int decay, float target, vec3 color) {
-  vec3 pointColor = color * pow(target / length(position - fs_position), float(decay));
+  float floatDecay = float(decay);
+  vec3 pointColor = color * pow(target / length(position - fs_position), floatDecay);
   return LightInfo(normalize(position - fs_position), pointColor);
 }
 
@@ -71,7 +72,8 @@ LightInfo spotLightInfo(vec3 position, vec3 direction, int decay, float target, 
 
   vec3 spotDirection = normalize(position - fs_position);
   float cosAngle = dot(spotDirection, direction);
-  vec3 spotColor =  clamp((cosAngle - cosOut) / (cosIn - cosOut), 0.0, 1.0) * color * pow(target / length(position - fs_position), target);
+  float floatDecay = float(decay);
+  vec3 spotColor =  clamp((cosAngle - cosOut) / (cosIn - cosOut), 0.0, 1.0) * color * pow(target / length(position - fs_position), floatDecay);
 
   return LightInfo(normalize(position - fs_position), spotColor);
 }
@@ -95,25 +97,29 @@ void main() {
   vec3 diffuseContribute = vec3(0,0,0);
   // Compute contributes from direct lights
   for (int i = 0; i < 10; i++) {
-    if (directLights[i].valid == 0)
+    if (directLights[i].valid == 0) {
       break;
+    }
     LightInfo directLight = directLightInfo(directLights[i].direction, directLights[i].color);
     diffuseContribute += computeDiffuse(directLight, compoundDiffuseColour, norm);
   }
   // Compute contributes from point lights
   for (int i = 0; i < 10; i++) {
-    if (pointLights[i].valid == 0)
-    break;
+    if (pointLights[i].valid == 0) {
+      break;
+    }
     LightInfo pointLight = pointLightInfo(pointLights[i].position, pointLights[i].decay, pointLights[i].target, pointLights[i].color);
     diffuseContribute += computeDiffuse(pointLight, compoundDiffuseColour, norm);
   }
   // Compute contributes from spot lights
   for (int i = 0; i < 10; i++) {
-    if (spotLights[i].valid == 0)
+    if (spotLights[i].valid == 0) {
       break;
+    }
     LightInfo spotLight = spotLightInfo(spotLights[i].position, spotLights[i].direction, spotLights[i].decay, spotLights[i].target, spotLights[i].color, spotLights[i].coneOut, spotLights[i].coneIn);
     diffuseContribute += computeDiffuse(spotLight, compoundDiffuseColour, norm);
   }
+  diffuseContribute = vec3(0,0,0);
 
   vec3 ambientContribute;
   if (ambientType == 0) {

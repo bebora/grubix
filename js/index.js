@@ -6,10 +6,9 @@ import { SkyBox } from "./render/skybox.js";
 import "./lib/webgl-obj-loader.min.js";
 import { CanvasState } from "./state/canvas.js";
 import { Window } from "./ui/window.js";
-import { LightOptions, LightSideBar } from "./ui/sidebar/light.js";
+import { LightSideBar } from "./ui/sidebar/light.js";
 import { LightState } from "./state/light.js";
-import {LightRenderer} from "./render/light.js";
-
+import { LightRenderer } from "./render/light.js";
 
 const mainAmbientColorInputElement =
   document.getElementById("ambient-color-up");

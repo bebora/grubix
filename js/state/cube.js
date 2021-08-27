@@ -270,7 +270,7 @@ class CubeState {
     let roundedRotationAngle = null;
 
     if (inertia) {
-      if (tempAngle < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
+      if (inertia < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
       else roundedRotationAngle = Math.ceil(tempAngle / 90) * 90;
     } else roundedRotationAngle = Math.round(tempAngle / 90) * 90 + angle;
 
@@ -466,6 +466,16 @@ class CubeState {
 
     let solution = this.cube.solve().split(" ");
     await this.executeMoves(solution, 1);
+  }
+
+  reset() {
+    for (let i = 0; i < this.pieceArray.length; i++) {
+      this.pieceArray[i].worldMatrix = mathUtils.identityMatrix();
+    }
+    for (let i = 0; i < this.slotArray.length; i++) {
+      this.slotArray[i].piece = this.pieceArray[i];
+    }
+    this.cube.identity();
   }
 }
 

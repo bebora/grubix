@@ -25,7 +25,7 @@ function LightHTMLOptions() {
     z: document.getElementById("light-point-z"),
     color: document.getElementById("light-point-color"),
     decay: document.getElementById("light-point-decay"),
-    distance: document.getElementById("light-point-distance"),
+    target: document.getElementById("light-point-target"),
   };
 
   this.spot = {
@@ -37,7 +37,7 @@ function LightHTMLOptions() {
     decay: document.getElementById("light-spot-decay"),
     azimuth: document.getElementById("light-spot-azimuth"),
     elevation: document.getElementById("light-spot-elevation"),
-    distance: document.getElementById("light-spot-distance"),
+    target: document.getElementById("light-spot-target"),
     coneOut: document.getElementById("light-spot-cone-out"),
     coneIn: document.getElementById("light-spot-cone-in"),
   };
@@ -67,7 +67,7 @@ export function LightOptions(elements, lightState) {
     z: parseFloat(elements.point.z.value),
     color: parseHexColor(elements.point.color.value),
     decay: parseInt(elements.point.decay.value),
-    distance: parseFloat(elements.point.distance.value),
+    target: parseFloat(elements.point.target.value),
   };
 
   this.spot = {
@@ -78,7 +78,7 @@ export function LightOptions(elements, lightState) {
     elevation: parseFloat(elements.spot.elevation.value),
     color: parseHexColor(elements.spot.color.value),
     decay: parseInt(elements.spot.decay.value),
-    distance: parseFloat(elements.spot.distance.value),
+    target: parseFloat(elements.spot.target.value),
     coneOut: parseFloat(elements.spot.coneOut.value),
     coneIn: parseFloat(elements.spot.coneIn.value),
   };
@@ -114,14 +114,14 @@ export function LightOptions(elements, lightState) {
     [elements.direct.elevation, this.direct, "elevation"],
     [elements.point.x, this.point, "x"],
     [elements.point.y, this.point, "y"],
-    [elements.point.y, this.point, "z"],
-    [elements.point.distance, this.point, "distance"],
+    [elements.point.z, this.point, "z"],
+    [elements.point.target, this.point, "target"],
     [elements.spot.azimuth, this.spot, "azimuth"],
     [elements.spot.elevation, this.spot, "elevation"],
     [elements.spot.x, this.spot, "x"],
     [elements.spot.y, this.spot, "y"],
-    [elements.spot.y, this.spot, "z"],
-    [elements.spot.distance, this.spot, "distance"],
+    [elements.spot.z, this.spot, "z"],
+    [elements.spot.target, this.spot, "target"],
     [elements.spot.coneOut, this.spot, "coneOut"],
     [elements.spot.coneIn, this.spot, "coneIn"],
   ];
@@ -181,7 +181,10 @@ export function LightSideBar(lightState) {
     // Add the light to the state
     lightState.addLight(lightOptions.general.type, lightOptions.toOption());
     if (lightState.lights.length === 10) htmlElements.addLight.disabled = true;
-    if (lightState.lights.length > 0) htmlElements.removeLight.disabled = false;
+    if (lightState.lights.length > 0) {
+      htmlElements.removeLight.disabled = false;
+      htmlElements.type.classList.remove("hidden");
+    }
   };
 
   this.removeLight = function () {
@@ -198,8 +201,14 @@ export function LightSideBar(lightState) {
     htmlElements.id.dispatchEvent(new Event("input"));
 
     if (lightState.lights.length < 10) htmlElements.addLight.disabled = false;
-    if (lightState.lights.length === 0)
+    if (lightState.lights.length === 0) {
       htmlElements.removeLight.disabled = true;
+
+      htmlElements.type.classList.add("hidden");
+      htmlElements.direct.panel.classList.add("hidden");
+      htmlElements.point.panel.classList.add("hidden");
+      htmlElements.spot.panel.classList.add("hidden");
+    }
   };
 
   this.changeLightId = function () {
@@ -232,7 +241,7 @@ export function LightSideBar(lightState) {
         point.z.value = currentOptions.z;
         point.color.value = rgbToHex(currentOptions.color);
         point.decay.value = currentOptions.decay;
-        point.distance.value = currentOptions.distance;
+        point.target.value = currentOptions.target;
 
         toDispatch = [
           point.x,
@@ -240,7 +249,7 @@ export function LightSideBar(lightState) {
           point.z,
           point.color,
           point.decay,
-          point.distance,
+          point.target,
         ];
         break;
       }
@@ -254,7 +263,7 @@ export function LightSideBar(lightState) {
         spot.z.value = currentOptions.z;
         spot.color.value = rgbToHex(currentOptions.color);
         spot.decay.value = currentOptions.decay;
-        spot.distance.value = currentOptions.distance;
+        spot.target.value = currentOptions.target;
         spot.coneOut = currentOptions.coneOut;
         spot.coneIn = currentOptions.coneIn;
 
@@ -264,7 +273,7 @@ export function LightSideBar(lightState) {
           spot.z,
           spot.color,
           spot.decay,
-          spot.distance,
+          spot.target,
           spot.azimuth,
           spot.elevation,
           spot.coneOut,

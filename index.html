@@ -12,13 +12,11 @@
   <div class="sidebar-right">
     <button type="button" id="toggle-sidebar">Toggle sidebar</button>
     <div class="option-container" id="light">
-      <label for="light-id">Light</label>
+      <label for="light-id">Light ID</label>
       <select id="light-id">
       </select>
       <button id="add-light">+</button>
       <button id="remove-light">-</button>
-      <br>
-      <label for="light-type">Light type</label>
       <select id="light-type">
         <option value="direct" selected>Direct</option>
         <option value="point">Point</option>
@@ -27,10 +25,10 @@
       <br>
       <div id="light-direct">
         <label for="light-direct-azimuth">Azimuth direction</label>
-        <input type="range" min="0" max="360" value="0" id="light-direct-azimuth">
+        <input type="range" min="-180" max="180" value="0" id="light-direct-azimuth">
         <br>
         <label for="light-direct-elevation">Elevation direction</label>
-        <input type="range" min="-90" max="90" value="90" id="light-direct-elevation">
+        <input type="range" min="0" max="180" value="90" id="light-direct-elevation">
         <br>
         <label for="light-direct-color">Color</label>
         <input type="color" id="light-direct-color" name="light-direct-color" value="#c0ffee">
@@ -55,8 +53,8 @@
           <option value="2">2</option>
         </select>
         <br>
-        <label for="light-point-distance">Target Distance</label>
-          <input type="range" min="0" max="100" value="0" id="light-point-distance">
+        <label for="light-point-target">Target Distance</label>
+          <input type="range" min="0" max="200" value="0" id="light-point-target">
         <br>
       </div>
       <div id="light-spot" class="hidden">
@@ -84,8 +82,8 @@
           <option value="2">2</option>
         </select>
         <br>
-        <label for="light-spot-distance">Target Distance</label>
-        <input type="range" min="0" max="200" value="0" id="light-spot-distance">
+        <label for="light-spot-target">Target Distance</label>
+        <input type="range" min="0" max="200" value="0" id="light-spot-target">
         <br>
         <label for="light-spot-cone-out">Cone out</label>
         <input type="range" min="0" max="150" id="light-spot-cone-out">
@@ -138,6 +136,9 @@
     </div>
     <div class="option-container">
       <button id="solve">Solve!</button>
+    </div>
+    <div class="option-container">
+      <button id="reset">Reset!</button>
     </div>
   </div>
   <div class="left">

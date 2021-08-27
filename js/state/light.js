@@ -1,7 +1,7 @@
 /**
  * Manage a single light with a given type and option
  */
-import {mathUtils} from "../utils.js";
+import { mathUtils } from "../utils.js";
 
 function Light() {
   /**
@@ -15,43 +15,68 @@ function Light() {
   };
 
   /**
- * Retrieve the parameters useful to render the light
- */
+   * Retrieve the parameters useful to render the light
+   */
   this.getParameters = function () {
-      if (this.type === "direct") {
-        let color = this.options.color;
-        let elevation = mathUtils.degToRad(this.options.elevation);
-        let azimuth = mathUtils.degToRad(this.options.azimuth);
-        let direction = [Math.sin(elevation)*Math.sin(azimuth), Math.cos(elevation), Math.sin(elevation)*Math.cos(azimuth)];
-        return {
-          color,
-          direction
-        }
-      }
-      else if (this.type === "point") {
-          let color = [...this.options.color, 1];
-          let position = [this.options.x/10, this.options.y/10, this.options.z/10]
-          let decay = this.options.decay;
-          let target = this.options.target/10;
-          return {
-            color, position, decay, target
-          }
-        }
-      else if (this.type === "spot") {
-        let color = [...this.options.color, 1];
-        let position = [this.options.x/10, this.options.y/10, this.options.z/10]
-        let decay = this.options.decay;
-        let target = this.options.target/10;
-        let elevation = mathUtils.degToRad(this.options.elevation);
-        let azimuth = mathUtils.degToRad(this.options.azimuth);
-        let direction = [Math.sin(elevation)*Math.sin(azimuth), Math.cos(elevation), Math.sin(elevation)*Math.cos(azimuth)];
-        let coneIn = this.options.coneIn / 100;
-        let coneOut = this.options.coneOut / 360 * 3.14;
-        return {
-          color, position, decay, target, direction, coneIn, coneOut
-        }
-      }
-  }
+    if (this.type === "direct") {
+      let color = this.options.color;
+      let elevation = mathUtils.degToRad(this.options.elevation);
+      let azimuth = mathUtils.degToRad(this.options.azimuth);
+      let direction = [
+        Math.sin(elevation) * Math.sin(azimuth),
+        Math.cos(elevation),
+        Math.sin(elevation) * Math.cos(azimuth),
+      ];
+      return {
+        color,
+        direction,
+      };
+    } else if (this.type === "point") {
+      let color = this.options.color;
+      let position = [
+        this.options.x / 10,
+        this.options.y / 10,
+        this.options.z / 10,
+      ];
+      let decay = this.options.decay;
+      let target = this.options.target / 10;
+      let obj = {
+        color,
+        position,
+        decay,
+        target,
+      };
+      console.log(obj);
+      return obj;
+    } else if (this.type === "spot") {
+      let color = this.options.color;
+      let position = [
+        this.options.x / 10,
+        this.options.y / 10,
+        this.options.z / 10,
+      ];
+      let decay = this.options.decay;
+      let target = this.options.target / 10;
+      let elevation = mathUtils.degToRad(this.options.elevation);
+      let azimuth = mathUtils.degToRad(this.options.azimuth);
+      let direction = [
+        Math.sin(elevation) * Math.sin(azimuth),
+        Math.cos(elevation),
+        Math.sin(elevation) * Math.cos(azimuth),
+      ];
+      let coneIn = this.options.coneIn / 100;
+      let coneOut = (this.options.coneOut / 360) * 3.14;
+      return {
+        color,
+        position,
+        decay,
+        target,
+        direction,
+        coneIn,
+        coneOut,
+      };
+    }
+  };
 }
 
 /**
