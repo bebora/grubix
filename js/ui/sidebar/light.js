@@ -197,6 +197,11 @@ export function LightSideBar(lightState) {
     // Remove from the light state
     lightState.removeLight(idElementToRemove);
 
+    // We need to shift all the subsequent lights to the correct id in the select
+    for (let i = idElementToRemove; i < lightState.lights.length; i++) {
+      htmlElements.id.options[i].text = i.toString();
+    }
+
     // Dispatch event to update sidebar
     htmlElements.id.dispatchEvent(new Event("input"));
 
