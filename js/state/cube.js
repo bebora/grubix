@@ -270,7 +270,7 @@ class CubeState {
     let roundedRotationAngle = null;
 
     if (inertia) {
-      if (tempAngle < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
+      if (inertia < 0) roundedRotationAngle = Math.floor(tempAngle / 90) * 90;
       else roundedRotationAngle = Math.ceil(tempAngle / 90) * 90;
     } else roundedRotationAngle = Math.round(tempAngle / 90) * 90 + angle;
 
