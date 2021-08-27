@@ -1,4 +1,21 @@
 /**
+ * Convert rgb values (between 0 and 1) to hex
+ * @param {number[]} colors array of colors between 0 and 1
+ * @return {string}
+ */
+const rgbToHex = function (colors) {
+  let r = colors[0] * 255;
+  let g = colors[1] * 255;
+  let b = colors[2] * 255;
+  function componentToHex(c) {
+    let hex = c.toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  }
+
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+};
+
+/**
  * Obtain RGB values from hexadecimal notation
  * @param {string} color color in hexadecimal notation
  * @return {number[]} array of RGB values between 0 and 1
@@ -789,6 +806,7 @@ function MouseQueue(size) {
 
 export {
   parseHexColor,
+  rgbToHex,
   mathUtils,
   transformUtils,
   projectionUtils,

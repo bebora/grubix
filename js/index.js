@@ -6,27 +6,10 @@ import { SkyBox } from "./render/skybox.js";
 import "./lib/webgl-obj-loader.min.js";
 import { CanvasState } from "./state/canvas.js";
 import { Window } from "./ui/window.js";
+import { LightOptions, LightSideBar } from "./ui/sidebar/light.js";
+import { LightState } from "./state/light.js";
+import {LightRenderer} from "./render/light.js";
 
-// TODO move to appropriate file this function
-let optionToLightDirection = function (opt) {
-  switch (parseInt(opt)) {
-    case 1:
-      return [0.0, 1.0, 0.0];
-    case 2:
-      return [0.0, -1.0, 0.0];
-    case 3:
-      return [1.0, 0.0, 0.0];
-    case 4:
-      return [-1.0, 0.0, 0.0];
-    case 5:
-      return [0.0, 0.0, 1.0];
-    case 6:
-      return [0.0, 0.0, -1.0];
-  }
-};
-
-const lightDirectionInputElement = document.getElementById("light-dir-select");
-let lightDirection = optionToLightDirection(lightDirectionInputElement.value);
 
 const mainAmbientColorInputElement =
   document.getElementById("ambient-color-up");
@@ -80,9 +63,18 @@ const mainTest = async function () {
   // Initialize the states
   const cameraState = new CameraState();
   const canvasState = new CanvasState(gl);
+  const lightState = new LightState();
+
+  const matrices = {
+    perspectiveMatrix: canvasState.perspectiveMatrix,
+    viewMatrix: cameraState.viewMatrix,
+  };
 
   // Initialize UI managers
   new Window(canvasState);
+  const mouseHandler = new MouseHandler(gl.canvas, cube, cameraState, matrices);
+  mouseHandler.initInputEventListeners();
+  new LightSideBar(lightState);
 
   let sidebarOpen = true;
   document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
@@ -98,15 +90,6 @@ const mainTest = async function () {
     canvasState.expandToParent();
   });
 
-  const matrices = {
-    perspectiveMatrix: canvasState.perspectiveMatrix,
-    viewMatrix: cameraState.viewMatrix,
-  };
-
-  // Start listening to user input
-  const inputHandler = new MouseHandler(gl.canvas, cube, cameraState, matrices);
-  inputHandler.initInputEventListeners();
-
   const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
   await skyBox.init();
 
@@ -119,14 +102,12 @@ const mainTest = async function () {
   ]);
   gl.useProgram(program);
 
-  // Shader and viewport variables
-  const directionalLightColor = [1.0, 1.0, 1.0];
-
   // Clear viewport
   gl.clearColor(0.85, 1.0, 0.85, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST);
 
+  let lightRenderer = new LightRenderer(lightState, gl, program);
   // Obtain locations of attributes and uniforms
   const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   const normalAttributeLocation = gl.getAttribLocation(program, "a_normal");
@@ -147,8 +128,6 @@ const mainTest = async function () {
     program,
     "materialDiffuseColor"
   );
-  const lightDirLocation = gl.getUniformLocation(program, "lightDirection");
-  const lightColLocation = gl.getUniformLocation(program, "lightColor");
   const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
   const tangentAttributeLocation = gl.getAttribLocation(program, "a_tangent");
   const bitangentAttributeLocation = gl.getAttribLocation(
@@ -290,12 +269,6 @@ const mainTest = async function () {
       mathUtils.transposeMatrix(matrices.viewMatrix)
     );
 
-    // Directional light transformed by the 3x3 submatrix
-    let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
-      mathUtils.sub3x3from4x4(lightDirMatrix),
-      lightDirection
-    );
-
     const cameraSpaceAmbientDirection = mathUtils.multiplyMatrix3Vector3(
       mathUtils.sub3x3from4x4(lightDirMatrix),
       ambientUpVector
@@ -304,10 +277,6 @@ const mainTest = async function () {
     gl.uniform1f(textureIntensityLocation, textureIntensity);
 
     gl.uniform3fv(materialDiffuseColorLocation, materialDiffuseColor);
-
-    gl.uniform3fv(lightDirLocation, directionalLightTransformed);
-
-    gl.uniform3fv(lightColLocation, directionalLightColor);
 
     gl.uniform3fv(mainAmbientColorLocation, mainAmbientColor);
 
@@ -320,6 +289,8 @@ const mainTest = async function () {
     gl.uniform1i(textLocation, 0);
 
     gl.uniform1i(normalMapLocation, 1);
+
+    lightRenderer.injectUniform(matrices.viewMatrix);
 
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
@@ -373,10 +344,6 @@ const mainTest = async function () {
   drawFrame();
 };
 
-// Options change listeners
-lightDirectionInputElement.addEventListener("input", (e) => {
-  lightDirection = optionToLightDirection(e.target.value);
-});
 mainAmbientColorInputElement.addEventListener("input", (e) => {
   mainAmbientColor = parseHexColor(e.target.value);
 });

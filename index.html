@@ -11,23 +11,89 @@
 <div class="container">
   <div class="sidebar-right">
     <button type="button" id="toggle-sidebar">Toggle sidebar</button>
-    <div class="option-container">
-      <label for="light-select">Light type</label>
-      <select id="light-select">
-        <option value="1" selected>Option 1</option>
-        <option value="2">Option 2</option>
-        <option value="3">Option 3</option>
+    <div class="option-container" id="light">
+      <label for="light-id">Light</label>
+      <select id="light-id">
+      </select>
+      <button id="add-light">+</button>
+      <button id="remove-light">-</button>
+      <br>
+      <label for="light-type">Light type</label>
+      <select id="light-type">
+        <option value="direct" selected>Direct</option>
+        <option value="point">Point</option>
+        <option value="spot">Spot</option>
       </select>
       <br>
-      <label for="light-dir-select">Light direction</label>
-      <select id="light-dir-select">
-        <option value="1" selected>From top</option>
-        <option value="2">From bottom</option>
-        <option value="3">From right</option>
-        <option value="4">From left</option>
-        <option value="5">From us towards infinite</option>
-        <option value="6">From infinite towards us</option>
-      </select>
+      <div id="light-direct">
+        <label for="light-direct-azimuth">Azimuth direction</label>
+        <input type="range" min="0" max="360" value="0" id="light-direct-azimuth">
+        <br>
+        <label for="light-direct-elevation">Elevation direction</label>
+        <input type="range" min="-90" max="90" value="90" id="light-direct-elevation">
+        <br>
+        <label for="light-direct-color">Color</label>
+        <input type="color" id="light-direct-color" name="light-direct-color" value="#c0ffee">
+      </div>
+      <div id="light-point" class="hidden">
+        <label for="light-point-x">Position x</label>
+        <input type="range" min="-30" max="30" value="0" id="light-point-x">
+        <br>
+        <label for="light-point-y">Position y</label>
+        <input type="range" min="-30" max="30" value="0" id="light-point-y">
+        <br>
+        <label for="light-point-z">Position z</label>
+        <input type="range" min="-30" max="30" value="0" id="light-point-z">
+        <br>
+        <label for="light-point-color">Color</label>
+        <input type="color" id="light-point-color" name="light-point-color" value="#c0ffee">
+        <br>
+        <label for="light-point-decay">Decay</label>
+        <select id="light-point-decay">
+          <option value="0" selected>0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+        <br>
+        <label for="light-point-distance">Target Distance</label>
+          <input type="range" min="0" max="100" value="0" id="light-point-distance">
+        <br>
+      </div>
+      <div id="light-spot" class="hidden">
+        <label for="light-spot-x">Position x</label>
+        <input type="range" min="-30" max="30" value="0" id="light-spot-x">
+        <br>
+        <label for="light-spot-y">Position y</label>
+        <input type="range" min="-30" max="30" value="0" id="light-spot-y">
+        <br>
+        <label for="light-spot-z">Position z</label>
+        <input type="range" min="-30" max="30" value="0" id="light-spot-z">
+        <br>
+        <label for="light-direct-azimuth">Azimuth direction</label>
+        <input type="range" min="-180" max="180" value="0" id="light-spot-azimuth">
+        <br>
+        <label for="light-direct-elevation">Elevation direction</label>
+        <input type="range" min="0" max="180" value="90" id="light-spot-elevation">
+        <br>
+        <label for="light-spot-color">Color</label>
+        <input type="color" id="light-spot-color" name="light-spot-color" value="#c0ffee">
+        <label for="light-spot-decay">Decay</label>
+        <select id="light-spot-decay">
+          <option value="0" selected>0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+        <br>
+        <label for="light-spot-distance">Target Distance</label>
+        <input type="range" min="0" max="200" value="0" id="light-spot-distance">
+        <br>
+        <label for="light-spot-cone-out">Cone out</label>
+        <input type="range" min="0" max="150" id="light-spot-cone-out">
+        <br>
+        <label for="light-spot-cone-in">Cone in</label>
+        <input type="range" min="0" max="100" id="light-spot-cone-in">
+        <br>
+      </div>
       <br>
       <label for="ambient-select">Ambient type</label>
       <select id="ambient-select">
@@ -42,10 +108,10 @@
       <input type="color" id="ambient-color-down" name="ambient-color-down" value="#17a11a">
       <br>
       <label for="ambient-azimuth">Azimuth ambient direction</label>
-      <input type="range" min="0" max="360" value="0" id="ambient-azimuth">
+      <input type="range" min="-180" max="180" value="0" id="ambient-azimuth">
       <br>
       <label for="ambient-elevation">Elevation ambient direction</label>
-      <input type="range" min="-90" max="90" value="90" id="ambient-elevation">
+      <input type="range" min="0" max="180" value="90" id="ambient-elevation">
     </div>
     <div class="option-container">
       <label for="diffuse-select">Diffuse type</label>
