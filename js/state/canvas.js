@@ -3,16 +3,17 @@ import { mathUtils, projectionUtils } from "../utils.js";
 /**
  * Represent the state of the canvas
  * @param {WebGL2RenderingContext} gl
+ * @param {HTMLElement} canvas
  */
-export function CanvasState(gl) {
+export function CanvasState(gl, canvas) {
   /**
    * Expand the canvas state and update the perspective matrix
    */
   this.expandToParent = function () {
-    const parent = gl.canvas.parentElement;
-    gl.canvas.width = parent.clientWidth;
-    gl.canvas.height = parent.clientHeight;
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    const parent = canvas.parentElement;
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
 
     this.perspectiveMatrix = this.toPerspectiveMatrix();
   };
@@ -24,7 +25,7 @@ export function CanvasState(gl) {
   this.toPerspectiveMatrix = function () {
     return projectionUtils.makePerspective(
       90,
-      gl.canvas.width / gl.canvas.height,
+      canvas.width / canvas.height,
       0.1,
       100.0
     );

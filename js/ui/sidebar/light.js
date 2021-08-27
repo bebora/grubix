@@ -180,6 +180,9 @@ export function LightSideBar(lightState) {
     lightOptions.general.id = idElement.options.length - 1;
     // Add the light to the state
     lightState.addLight(lightOptions.general.type, lightOptions.toOption());
+    // Dispatch event to update sidebar
+    htmlElements.id.dispatchEvent(new Event("input"));
+
     if (lightState.lights.length === 10) htmlElements.addLight.disabled = true;
     if (lightState.lights.length > 0) {
       htmlElements.removeLight.disabled = false;
@@ -191,8 +194,10 @@ export function LightSideBar(lightState) {
     // Retrieve the current light
     let idElementToRemove = htmlElements.id.value;
     // Edit the selected element
-    htmlElements.id.value = idElementToRemove - 1;
-    lightOptions.general.id = idElementToRemove - 1;
+    let newElement =
+      idElementToRemove === 0 ? idElementToRemove + 1 : idElementToRemove - 1;
+    htmlElements.id.value = newElement;
+    lightOptions.general.id = newElement;
     htmlElements.id.options.remove(idElementToRemove);
     // Remove from the light state
     lightState.removeLight(idElementToRemove);
@@ -200,10 +205,8 @@ export function LightSideBar(lightState) {
     // We need to shift all the subsequent lights to the correct id in the select
     for (let i = idElementToRemove; i < lightState.lights.length; i++) {
       htmlElements.id.options[i].text = i.toString();
+      htmlElements.id.options[i].value = i.toString();
     }
-
-    // Dispatch event to update sidebar
-    htmlElements.id.dispatchEvent(new Event("input"));
 
     if (lightState.lights.length < 10) htmlElements.addLight.disabled = false;
     if (lightState.lights.length === 0) {
@@ -213,6 +216,9 @@ export function LightSideBar(lightState) {
       htmlElements.direct.panel.classList.add("hidden");
       htmlElements.point.panel.classList.add("hidden");
       htmlElements.spot.panel.classList.add("hidden");
+    } else {
+      // Dispatch event to update sidebar
+      htmlElements.id.dispatchEvent(new Event("input"));
     }
   };
 

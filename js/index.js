@@ -61,7 +61,7 @@ const mainTest = async function () {
 
   // Initialize the states
   const cameraState = new CameraState();
-  const canvasState = new CanvasState(gl);
+  const canvasState = new CanvasState(gl, canvas);
   const lightState = new LightState();
 
   const matrices = {
