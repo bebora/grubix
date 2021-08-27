@@ -283,6 +283,11 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
       await cube.solve();
       cube.transitionInProgress = false;
     });
+
+    const resetButtonElement = document.getElementById("reset");
+    resetButtonElement.addEventListener("click", function () {
+      cube.reset();
+    });
   }
 
   return {

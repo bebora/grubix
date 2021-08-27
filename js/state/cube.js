@@ -467,6 +467,16 @@ class CubeState {
     let solution = this.cube.solve().split(" ");
     await this.executeMoves(solution, 1);
   }
+
+  reset() {
+    for(let i = 0; i < this.pieceArray.length; i++){
+      this.pieceArray[i].worldMatrix = mathUtils.identityMatrix();
+    }
+    for(let i = 0; i < this.slotArray.length; i++){
+      this.slotArray[i].piece = this.pieceArray[i]
+    }
+    this.cube.identity();
+  }
 }
 
 /**
