@@ -73,8 +73,7 @@ LightInfo spotLightInfo(vec3 position, vec3 direction, int decay, float target, 
   vec3 spotDirection = normalize(position - fs_position);
   float cosAngle = dot(spotDirection, direction);
   float floatDecay = float(decay);
-  vec3 spotColor =  clamp((cosAngle - cosOut) / (cosIn - cosOut), 0.0, 1.0) * color * pow(target / length(position - fs_position), floatDecay);
-
+  vec3 spotColor =  color * clamp((cosAngle - cosOut) / (cosIn - cosOut), 0.0, 1.0) * pow(target / length(position - fs_position), floatDecay);
   return LightInfo(normalize(position - fs_position), spotColor);
 }
 

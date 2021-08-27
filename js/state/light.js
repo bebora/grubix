@@ -40,14 +40,12 @@ function Light() {
       ];
       let decay = this.options.decay;
       let target = this.options.target / 10;
-      let obj = {
+      return {
         color,
         position,
         decay,
         target,
       };
-      console.log(obj);
-      return obj;
     } else if (this.type === "spot") {
       let color = this.options.color;
       let position = [
@@ -65,7 +63,7 @@ function Light() {
         Math.sin(elevation) * Math.cos(azimuth),
       ];
       let coneIn = this.options.coneIn / 100;
-      let coneOut = (this.options.coneOut / 360) * 3.14;
+      let coneOut = this.options.coneOut;
       return {
         color,
         position,
