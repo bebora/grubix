@@ -15,6 +15,9 @@ import { AmbientRenderer } from "./render/ambient.js";
 import { DiffuseState } from "./state/diffuse.js";
 import { DiffuseSideBar } from "./ui/sidebar/diffuse.js";
 import { DiffuseRenderer } from "./render/diffuse.js";
+import { SpecularState } from "./state/specular.js";
+import { SpecularSideBar } from "./ui/sidebar/specular.js";
+import { SpecularRenderer } from "./render/specular.js";
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -42,6 +45,7 @@ const mainTest = async function () {
   const lightState = new LightState();
   const ambientState = new AmbientState();
   const diffuseState = new DiffuseState();
+  const specularState = new SpecularState();
 
   const matrices = {
     perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -55,6 +59,7 @@ const mainTest = async function () {
   new LightSideBar(lightState);
   new AmbientSideBar(ambientState);
   new DiffuseSideBar(diffuseState);
+  new SpecularSideBar(specularState);
 
   let sidebarOpen = true;
   document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
@@ -70,7 +75,7 @@ const mainTest = async function () {
     canvasState.expandToParent();
   });
 
-  // Load renderers
+  // Load skybox
   const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
   await skyBox.init();
 
@@ -83,6 +88,7 @@ const mainTest = async function () {
   ]);
 
   gl.useProgram(program);
+  // Load cube-related renderers
   let lightRenderer = new LightRenderer(lightState, gl, program);
   let ambientRenderer = new AmbientRenderer(
     ambientState,
@@ -91,6 +97,7 @@ const mainTest = async function () {
     irradianceDir
   );
   let diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
+  let specularRenderer = new SpecularRenderer(specularState, gl, program);
   await ambientRenderer.loadTexture(gl);
 
   // Clear viewport
@@ -239,6 +246,7 @@ const mainTest = async function () {
     lightRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
     ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
     diffuseRenderer.injectUniform();
+    specularRenderer.injectUniform();
 
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
