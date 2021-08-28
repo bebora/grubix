@@ -42,8 +42,7 @@ async function initializePieces(meshDir) {
     fetchFile(`${meshDir}piece${id}.obj`)
   );
 
-  // qui importo gli obj, per ogni obj faccio un oggetto Piece
-  // dentro ogni Piece memorizzo vertici, normali, indici e uv
+  // Every .obj file will have its information stored in a Piece object
   for (let id = 0; id < 26; id++) {
     let meshObjStr = await promises[id];
     let meshObj = new OBJ.Mesh(meshObjStr);
@@ -63,6 +62,29 @@ async function initializePieces(meshDir) {
   return pieceArray;
 }
 
+/**
+   * A Slot is a static volume of the cube that contains a Piece.
+   * Slots are defined like this:
+   * 
+                          U
+
+                 L        F        R       B
+                 
+                          D
+
+
+                       0  1  2
+                       3  4  5
+                       6  7  8
+              0  3  6  6  7  8   8  5  2  2  1  0
+              9  12 14 14 15 16 16 13 11 11 10  9
+              17 20 23 23 24 25 25 22 19 19 18 17
+                       23 24 25
+                       20 21 22
+                       17 18 19
+
+      There isn't a slot in the center of the cube
+   */
 class Slot {
   constructor(id, piece) {
     this.id = id;
@@ -71,6 +93,12 @@ class Slot {
   }
 }
 
+/**
+   * Initialize all the slots by placing a Piece in its initial slot,
+   * that has the same id.
+   * @param {Piece[]} pieceArray array that contains all the Piece objects
+   * @returns {Slot[]} an array that contains all the Slot objects
+   */
 function initializeSlots(pieceArray) {
   let slotArray = [];
   for (let i = 0; i < 26; i++) {
@@ -81,11 +109,12 @@ function initializeSlots(pieceArray) {
 
 class Face {
   /**
-   * @param {string} name
+   * @param {string} name name of the face. It can be one of the following: F,B,L,R,U,D,M,E,S
    * @param {number[]} slotsID indices of slots contained in the face
-   * @param {number[]} slotArray all the existing slots
-   * @param {number[]} cwMatrix clockwise rotation 4D matrix
-   * @param {number[]} ccwMatrix counter clockwise rotation 4D matrix
+   * @param {Slot[]} slotArray all the existing slots
+   * @param {string} rotAxis the rotation axis of the face
+   * @param {number} rotDir +1 if a positive angle makes the face turn clockwise, -1 otherwise
+   * @param {number} fixedCoordinateValue the constant term of the equation of the face
    */
   constructor(name, slotsID, slotArray, rotAxis, rotDir, fixedCoordinateValue) {
     this.name = name;
@@ -99,6 +128,11 @@ class Face {
     this.center = [0, 0, 0];
     this.center[this.fixedCoordinate] = fixedCoordinateValue;
   }
+
+  /**
+   * Rotate the face along its axis of a given angle.
+   * @param {number} angle
+   */
   turnABit(angle) {
     for (let i = 0; i < this.slots.length; i++) {
       this.slots[i].piece.worldMatrix = mathUtils.multiplyMatrices(
@@ -109,6 +143,10 @@ class Face {
     this.tempAngle += angle;
   }
 
+  /**
+   * Change the state of the cube when a turn is completed.
+   * @param {boolean} clockwise true if the turn is clockwise, false otherwise
+   */
   turn(clockwise) {
     if (clockwise) {
       let tempC = this.slots[6].piece;
@@ -135,26 +173,37 @@ class Face {
     }
   }
 
+  /**
+   * Intersect the face with a ray
+   * @param {number[]} rayStartPoint 
+   * @param {number[]} normalisedRayDir 
+   * @returns {number[]} the intersection point, null if the ray is parallel to the face
+   */
   intersectRay(rayStartPoint, normalisedRayDir) {
     let intersection = [];
-    let fixedCoordinateNumber = coordDict[this.fixedCoordinate];
+    let fixedCoordinateIndex = coordDict[this.fixedCoordinate];
 
-    if (normalisedRayDir[fixedCoordinateNumber] == 0) return null;
+    if (normalisedRayDir[fixedCoordinateIndex] == 0) return null;
 
     let t =
-      (this.fixedCoordinateValue - rayStartPoint[fixedCoordinateNumber]) /
-      normalisedRayDir[fixedCoordinateNumber]; //geometric formula
-    intersection[fixedCoordinateNumber] = this.fixedCoordinateValue;
-    for (const [coord, number] of Object.entries(coordDict)) {
+      (this.fixedCoordinateValue - rayStartPoint[fixedCoordinateIndex]) /
+      normalisedRayDir[fixedCoordinateIndex]; //geometric formula
+    intersection[fixedCoordinateIndex] = this.fixedCoordinateValue;
+    for (const [coord, index] of Object.entries(coordDict)) {
       if (coord != this.fixedCoordinate) {
-        intersection[number] =
-          rayStartPoint[number] + normalisedRayDir[number] * t; // geometric formula
+        intersection[index] =
+          rayStartPoint[index] + normalisedRayDir[index] * t; // geometric formula
       }
     }
     return intersection;
   }
 }
 
+/**
+ * Initialize all the faces.
+ * @param {*} slotArray 
+ * @returns a dict with face names as key and face objects as values
+ */
 function initializeFaces(slotArray) {
   let faces = {};
   faces["U"] = new Face(
@@ -246,6 +295,12 @@ class CubeState {
   isSolved() {
     return this.cube.isSolved();
   }
+
+  /**
+   * Make a complete turn of a face, changing the state of the cube
+   * @param {string} faceName 
+   * @param {boolean} clockwise 
+   */
   move(faceName, clockwise) {
     this.faces[faceName].turn(clockwise);
     let move = faceName + clockwise ? "" : "'";
@@ -291,18 +346,21 @@ class CubeState {
 
     // Change the scene graph and cube state if needed
     if (roundedRotationAngle % 360 !== 0) {
-      //cube state and scene graph must be changed
+      // Cube state and scene graph must be changed
       let move = faceName;
       if (roundedRotationAngle === 90 || roundedRotationAngle === -270) {
+        // Do one complete turn clockwise
         face.turn(true);
       } else if (
         roundedRotationAngle === 180 ||
         roundedRotationAngle === -180
       ) {
+        // Do two complete turns clockwise
         face.turn(true);
         face.turn(true);
         move += "2";
       } else if (roundedRotationAngle === -90 || roundedRotationAngle === 270) {
+        // Do one complete turn counterclockwise
         face.turn(false);
         move += "'";
       }
@@ -312,6 +370,10 @@ class CubeState {
     face.tempAngle = 0;
   }
 
+  /**
+   * Set the facelets (the 6*9=54 coloured squares of the cube) of every slot.
+   * Facelets are static surfaces used to know what slot is intersected while casting a ray.
+   */
   setFacelets() {
     for (let s = 0; s < this.slotArray.length; s++) {
       for (const [faceName, faceObj] of Object.entries(
@@ -327,7 +389,9 @@ class CubeState {
           facelet.bounds = [];
           for (const [coord, number] of Object.entries(coordDict)) {
             if (coord != facelet.fixedCoordinate) {
-              let min = this.pieceArray[s].bounds[number][0]; // just for now slots are the same as pieces, no move has been done
+              // pieceArray is accessed through the slot index 
+              // because no move has been done yet and all the pieces are in their starting slot
+              let min = this.pieceArray[s].bounds[number][0];
               let max = this.pieceArray[s].bounds[number][1];
               facelet.bounds[number] = [min, max];
             }
@@ -340,6 +404,13 @@ class CubeState {
     }
   }
 
+  /**
+   * When clicking on a facelet, two faces can be possibly rotated, depending on the mouse movement. 
+   * Each face will be moved when the mouse moves along its direction.
+   * The direction for moving a face from a facelet is computed by doing a cross product 
+   * between two vectors: the first is the rotation axis, adjusted with the direction;
+   * the second is the one that goes from the center of the moving face to the face to which the facelet belongs.
+   */
   setDirectionsToFacelets() {
     for (let f = 0; f < this.facelets.length; f++) {
       let facelet = this.facelets[f];
@@ -359,13 +430,19 @@ class CubeState {
             }
           }
           v2 = mathUtils.subtractVectors3(endV2, startV2);
-          let dir = mathUtils.normaliseVector3(mathUtils.crossProduct3(v1, v2)); //maybe normalize
+          let dir = mathUtils.normaliseVector3(mathUtils.crossProduct3(v1, v2));
           facelet.directions[faceName] = dir;
         }
       }
     }
   }
 
+  /**
+   * Try to intersect all the facelets with a given ray. 
+   * @param {number[]} rayStartPoint 
+   * @param {number[]} normalisedRayDir 
+   * @returns the intersected facelet and the intersection point, or [null, null]
+   */
   intersectFacelets(rayStartPoint, normalisedRayDir) {
     //for every facelet get intersection and distance, returns nearest facelet or null
     let minDistance = null;
@@ -374,20 +451,20 @@ class CubeState {
     for (let f = 0; f < this.facelets.length; f++) {
       let facelet = this.facelets[f];
       let temp_intersection = [];
-      let fixedCoordinateNumber = coordDict[facelet.fixedCoordinate];
-      if (normalisedRayDir[fixedCoordinateNumber] == 0) continue;
+      let fixedCoordinateIndex = coordDict[facelet.fixedCoordinate];
+      if (normalisedRayDir[fixedCoordinateIndex] == 0) continue;
       let t =
-        (facelet.fixedCoordinateValue - rayStartPoint[fixedCoordinateNumber]) /
-        normalisedRayDir[fixedCoordinateNumber]; //geometric formula
-      temp_intersection[fixedCoordinateNumber] = facelet.fixedCoordinateValue;
+        (facelet.fixedCoordinateValue - rayStartPoint[fixedCoordinateIndex]) /
+        normalisedRayDir[fixedCoordinateIndex]; //geometric formula
+      temp_intersection[fixedCoordinateIndex] = facelet.fixedCoordinateValue;
       let withinBounds = true;
-      for (const [coord, number] of Object.entries(coordDict)) {
-        if (number != fixedCoordinateNumber) {
-          temp_intersection[number] =
-            rayStartPoint[number] + normalisedRayDir[number] * t; // geometric formula
+      for (const [coord, index] of Object.entries(coordDict)) {
+        if (index != fixedCoordinateIndex) {
+          temp_intersection[index] =
+            rayStartPoint[index] + normalisedRayDir[index] * t; // geometric formula
           if (
-            temp_intersection[number] < facelet.bounds[number][0] ||
-            temp_intersection[number] > facelet.bounds[number][1]
+            temp_intersection[index] < facelet.bounds[index][0] ||
+            temp_intersection[index] > facelet.bounds[index][1]
           )
             withinBounds = false;
         }
@@ -407,6 +484,9 @@ class CubeState {
     return [intersectedFacelet, intersection];
   }
 
+  /**
+   * Compute bounds of all pieces in order to use them in facelets. 
+   */
   setBoundsToPieces() {
     for (let p = 0; p < this.pieceArray.length; p++) {
       for (const [coord, number] of Object.entries(coordDict)) {
@@ -420,6 +500,9 @@ class CubeState {
     }
   }
 
+  /**
+   * Find all the faces to which a slot belongs.
+   */
   setFacesToSlots() {
     for (let i = 0; i < this.slotArray.length; i++) {
       let tempFaces = {};
@@ -497,29 +580,3 @@ async function initializeCube(meshDir) {
 }
 
 export { initializeCube, CubeState };
-/*
-    esempio:
-
-                          U
-
-                 L        F        R       B
-                 
-                          D
-
-
-                       0  1  2
-                       3  4  5
-                       6  7  8
-              0  3  6  6  7  8   8  5  2  2  1  0
-              9  12 14 14 15 16 16 13 11 11 10  9
-              17 20 23 23 24 25 25 22 19 19 18 17
-                       23 24 25
-                       20 21 22
-                       17 18 19
-    
-
-    nelle slice il cubetto centrale nel quadrato 3x3 non esiste proprio, non lo considero (non deve ruotare con una matrice)
-    nelle altre facce però deve ruotare coerentemente con gli altri cubetti della stessa faccia
-        però comunque essendo il cubo che sta sull'asse di rotazione rimane nello stesso slot
-        
-*/

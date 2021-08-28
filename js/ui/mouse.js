@@ -106,7 +106,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
   function doMouseMove(event) {
     if (pointerInputState) {
       const dx = event.pageX - lastMouseX;
-      const dy = lastMouseY - event.pageY;
+      const dy = event.pageY - lastMouseY;
       lastMouseX = event.pageX;
       lastMouseY = event.pageY;
 
@@ -121,12 +121,14 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
           }
 
           cameraState.update(
-            cameraState.elevation + 0.5 * dy,
+            cameraState.elevation + 0.5 * -dy,
             cameraState.angle + 0.5 * dx * sign,
             cameraState.lookRadius
           );
         }
       } else {
+        // Cube has been clicked
+
         // Record mouse state
         mouseQueue.push({
           x: event.clientX,
@@ -134,26 +136,28 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
           time: new Date().getTime(),
         });
 
-        let diffVect = [dx, -dy];
+        let diffVect = [dx, dy];
 
         if (lockedDir == null) {
-          let [faceName1, dir1] = Object.entries(activeFacelet.directions)[0];
-          let [faceName2, dir2] = Object.entries(activeFacelet.directions)[1];
+          // There is no locked direction, then the mouse movement will possibily lock one
+          let [faceName1, worldDir1] = Object.entries(activeFacelet.directions)[0];
+          let [faceName2, worldDir2] = Object.entries(activeFacelet.directions)[1];
 
-          let temp1 = projectDirToScreen(startPoint, dir1);
-          dir1 = mathUtils.normaliseVector2(temp1[1]);
+          let projDir1 = projectDirToScreen(startPoint, worldDir1);
+          let dir1 = mathUtils.normaliseVector2(projDir1);
           let scalarProduct1 =
-            sensitivity * mathUtils.scalarProduct2(diffVect, dir1); /// mathUtils.vectorNorm2(dir1Origin);
+            sensitivity * mathUtils.scalarProduct2(diffVect, dir1);
 
-          let temp2 = projectDirToScreen(startPoint, dir2);
-          dir2 = mathUtils.normaliseVector2(temp2[1]);
+          let projDir2 = projectDirToScreen(startPoint, worldDir2);
+          let dir2 = mathUtils.normaliseVector2(projDir2);
           let scalarProduct2 =
-            sensitivity * mathUtils.scalarProduct2(diffVect, dir2); /// mathUtils.vectorNorm2(dir1Origin);
+            sensitivity * mathUtils.scalarProduct2(diffVect, dir2);
 
           if (
             Math.abs(scalarProduct1) > Math.abs(scalarProduct2) &&
             Math.abs(accumulator1 + scalarProduct1) > moveThreshold
           ) {
+            // Direction and face 1 must be locked
             lockedDir = dir1;
             lockedFace = faceName1;
             moveActivated = true;
@@ -162,48 +166,75 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
             Math.abs(scalarProduct2) > Math.abs(scalarProduct1) &&
             Math.abs(accumulator2 + scalarProduct2) > moveThreshold
           ) {
+            // Direction and face 2 must be locked
             lockedDir = dir2;
             lockedFace = faceName2;
             moveActivated = true;
             cube.turnFaceABit(faceName2, accumulator2 + scalarProduct2);
           } else {
+            // No face has reached the moveThreshold yet, thus the movement is accumulated
             accumulator1 += scalarProduct1;
             accumulator2 += scalarProduct2;
           }
         } else {
+          // There is a locked direction (and a locked face)
           let scalarProduct =
             sensitivity * mathUtils.scalarProduct2(diffVect, lockedDir);
 
+          //Move the locked face
           cube.turnFaceABit(lockedFace, scalarProduct);
         }
       }
     }
   }
 
+  /**
+   * Get pixel coordinates from a point in world space.
+   * @param {number[]} pParam the 3D point to project on screen
+   * @returns the pixel coordinates (2D) of the given point and is z coordinate in camera space
+   */
   function getPixelCoordinates(pParam) {
     let p = [];
     p[0] = pParam[0];
     p[1] = pParam[1];
     p[2] = pParam[2];
     p[3] = 1;
-    let pv = mathUtils.multiplyMatrixVector(matrices.viewMatrix, p);
-    let pp = mathUtils.multiplyMatrixVector(matrices.perspectiveMatrix, pv);
-    let pNCD = [];
-    pNCD[0] = pp[0] / pp[3];
-    pNCD[1] = pp[1] / pp[3];
 
-    let x = (canvas.width * (pNCD[0] + 1.0)) / 2.0;
-    let y = (canvas.height * (1.0 - pNCD[1])) / 2.0;
-    return [Math.round(x), Math.round(y), pv[2]]; //to have even more precision, casting to int can be avoided
+    // Camera space
+    let pv = mathUtils.multiplyMatrixVector(matrices.viewMatrix, p);
+
+    // Projection space
+    let pp = mathUtils.multiplyMatrixVector(matrices.perspectiveMatrix, pv);
+
+    // Normalized device coordinates
+    let pNDC = [];
+    pNDC[0] = pp[0] / pp[3];
+    pNDC[1] = pp[1] / pp[3];
+
+    // Screen coordinates
+    let x = (canvas.width * (pNDC[0] + 1.0)) / 2.0;
+    let y = (canvas.height * (1.0 - pNDC[1])) / 2.0;
+
+    return [Math.round(x), Math.round(y), pv[2]]; 
+
+    // To have even more precision, casting to int can be avoided
     // pv[2] is the z coordinate in camera space: if positive, the point that is gonna be projected on screen is behind us,
     //  (behind the camera), thus it will be used to invert the direction along which the face can be moved
   }
 
+  /**
+   * Project a direction to screen. This is done by projecting the starting point of the line 
+   * and a second point chosen arbitrarily far on the same line
+   * @param {number[]} start the starting point of the line
+   * @param {number[]} dir the direction of the line
+   * @returns {number[]} the projected direction
+   */
   function projectDirToScreen(start, dir) {
     let end = mathUtils.sumVectors3(
       start,
       mathUtils.multiplyVectorScalar3(dir, 10000)
-      //this multiplier sets the precision when converting everything into pixel coordinates
+      // This multiplier sets the precision when converting everything into pixel coordinates
+      // The bigger it is, the more precise will be the line on screen
     );
     let startScreen = [lastMouseX, lastMouseY];
     let endScreen = [];
@@ -211,12 +242,19 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
     endScreen[0] = endTemp[0];
     endScreen[1] = endTemp[1];
 
-    let screenDir = mathUtils.subtractVectors2(endScreen, startScreen);
+    let projDir = mathUtils.subtractVectors2(endScreen, startScreen);
     if (endTemp[2] > 0.0)
-      screenDir = mathUtils.multiplyVectorScalar2(screenDir, -1.0);
-    return [startScreen, screenDir];
+      projDir = mathUtils.multiplyVectorScalar2(projDir, -1.0);
+    return projDir;
   }
 
+  /**
+   * Casts a ray that starts from the camera and passes through the near plane.
+   * The position on the near plane is computed by feeding the reversed pipeline with the pixel coordinates.
+   * @param {number} x pixel x coordinate
+   * @param {*} y pixel y coordinate
+   * @returns 
+   */
   function getNormRayDir(x, y) {
     //Here we calculate the normalised device coordinates from the pixel coordinates of the canvas
     let normX = (2.0 * x) / canvas.width - 1.0;
