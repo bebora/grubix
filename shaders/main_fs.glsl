@@ -212,6 +212,6 @@ void main() {
 
   vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(normal);
 
-  vec3 colour_with_ambient = clamp(ambientContribute , 0.0, 1.0);
+  vec3 colour_with_ambient = clamp(ambientContribute + diffuseSpecularContribute, 0.0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);
 }
