@@ -119,21 +119,23 @@ vec3 computeDiffuseContribute(DirectLight directLights[10], PointLight pointLigh
   return diffuseContribute;
 }
 
-vec3 computeAmbientContribute(vec3 normal, vec3 compoundAmbientDiffuseColour) {
+vec3 computeAmbientContribute(vec3 normal) {
   vec3 ambientContribute;
   if (ambientType == 1) {
     // Ambient regular
-    ambientContribute = ambientColor * compoundAmbientDiffuseColour;
+    ambientContribute = ambientColor;
   }
   else if (ambientType == 2) {
     float ambientMultiplier = (dot(normal, hemispheric.direction) + 1.0) / 2.0;
     ambientContribute = (
     hemispheric.upperColor * ambientMultiplier +
     hemispheric.lowerColor * (1.0 - ambientMultiplier)
-    ) * compoundAmbientDiffuseColour;
+    );
   }
   else {
     // Skybox with irradiance
+    // TODO The normal here are in camera space, but it's a bit weird to have them like that (irradiance change moving the camera). Evaluate whether we should put them in world space
+    // TODO Easy solution would be to pass the view matrix
     ambientContribute = texture(u_irradianceMap, normal).rgb;
   }
   return ambientContribute;
@@ -153,8 +155,8 @@ void main() {
   vec3 compoundAmbientDiffuseColour = textureIntensity * base_texture_colour + (1.0 - textureIntensity) * materialDiffuseColor;
 
   vec3 diffuseContribute = computeDiffuseContribute(directLights, pointLights, spotLights, compoundAmbientDiffuseColour, norm);
-  vec3 ambientContribute = computeAmbientContribute(norm, compoundAmbientDiffuseColour);
+  vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(adjustedNormal);
 
-  vec3 colour_with_ambient = clamp(diffuseContribute + ambientContribute , .0, 1.0);
+  vec3 colour_with_ambient = clamp(diffuseContribute + ambientContribute , 0.0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);
 }

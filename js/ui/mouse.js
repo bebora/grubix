@@ -140,8 +140,12 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
 
         if (lockedDir == null) {
           // There is no locked direction, then the mouse movement will possibily lock one
-          let [faceName1, worldDir1] = Object.entries(activeFacelet.directions)[0];
-          let [faceName2, worldDir2] = Object.entries(activeFacelet.directions)[1];
+          let [faceName1, worldDir1] = Object.entries(
+            activeFacelet.directions
+          )[0];
+          let [faceName2, worldDir2] = Object.entries(
+            activeFacelet.directions
+          )[1];
 
           let projDir1 = projectDirToScreen(startPoint, worldDir1);
           let dir1 = mathUtils.normaliseVector2(projDir1);
@@ -215,7 +219,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
     let x = (canvas.width * (pNDC[0] + 1.0)) / 2.0;
     let y = (canvas.height * (1.0 - pNDC[1])) / 2.0;
 
-    return [Math.round(x), Math.round(y), pv[2]]; 
+    return [Math.round(x), Math.round(y), pv[2]];
 
     // To have even more precision, casting to int can be avoided
     // pv[2] is the z coordinate in camera space: if positive, the point that is gonna be projected on screen is behind us,
@@ -223,7 +227,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
   }
 
   /**
-   * Project a direction to screen. This is done by projecting the starting point of the line 
+   * Project a direction to screen. This is done by projecting the starting point of the line
    * and a second point chosen arbitrarily far on the same line
    * @param {number[]} start the starting point of the line
    * @param {number[]} dir the direction of the line
@@ -253,7 +257,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
    * The position on the near plane is computed by feeding the reversed pipeline with the pixel coordinates.
    * @param {number} x pixel x coordinate
    * @param {*} y pixel y coordinate
-   * @returns 
+   * @returns
    */
   function getNormRayDir(x, y) {
     //Here we calculate the normalised device coordinates from the pixel coordinates of the canvas

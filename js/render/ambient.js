@@ -51,9 +51,18 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
     gl.activeTexture(gl.TEXTURE0 + 4);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
-    const texturesWithTarget = getTexturesWithTarget(gl, irradianceDir);
-    for (const textureWithTarget of texturesWithTarget) {
-      const { target, url } = textureWithTarget;
+    let targetsWithTexture = getTexturesWithTarget(gl, irradianceDir);
+    let targetsWithImages = targetsWithTexture.map((el) => {
+      let image = new Image();
+      image.src = el.url;
+      image.decode();
+      return {
+        target: el.target,
+        image,
+      };
+    });
+    for (const textureWithTarget of targetsWithImages) {
+      const { target, image } = textureWithTarget;
 
       // render in the texture, before it's loaded
       gl.texImage2D(
@@ -68,8 +77,6 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
         null
       );
 
-      const image = new Image();
-      image.src = url;
       await image.decode();
       // Now that the image has loaded upload it to the texture.
       gl.activeTexture(gl.TEXTURE0 + 4);

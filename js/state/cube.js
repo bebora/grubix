@@ -94,11 +94,11 @@ class Slot {
 }
 
 /**
-   * Initialize all the slots by placing a Piece in its initial slot,
-   * that has the same id.
-   * @param {Piece[]} pieceArray array that contains all the Piece objects
-   * @returns {Slot[]} an array that contains all the Slot objects
-   */
+ * Initialize all the slots by placing a Piece in its initial slot,
+ * that has the same id.
+ * @param {Piece[]} pieceArray array that contains all the Piece objects
+ * @returns {Slot[]} an array that contains all the Slot objects
+ */
 function initializeSlots(pieceArray) {
   let slotArray = [];
   for (let i = 0; i < 26; i++) {
@@ -175,8 +175,8 @@ class Face {
 
   /**
    * Intersect the face with a ray
-   * @param {number[]} rayStartPoint 
-   * @param {number[]} normalisedRayDir 
+   * @param {number[]} rayStartPoint
+   * @param {number[]} normalisedRayDir
    * @returns {number[]} the intersection point, null if the ray is parallel to the face
    */
   intersectRay(rayStartPoint, normalisedRayDir) {
@@ -201,7 +201,7 @@ class Face {
 
 /**
  * Initialize all the faces.
- * @param {*} slotArray 
+ * @param {*} slotArray
  * @returns a dict with face names as key and face objects as values
  */
 function initializeFaces(slotArray) {
@@ -298,8 +298,8 @@ class CubeState {
 
   /**
    * Make a complete turn of a face, changing the state of the cube
-   * @param {string} faceName 
-   * @param {boolean} clockwise 
+   * @param {string} faceName
+   * @param {boolean} clockwise
    */
   move(faceName, clockwise) {
     this.faces[faceName].turn(clockwise);
@@ -389,7 +389,7 @@ class CubeState {
           facelet.bounds = [];
           for (const [coord, number] of Object.entries(coordDict)) {
             if (coord != facelet.fixedCoordinate) {
-              // pieceArray is accessed through the slot index 
+              // pieceArray is accessed through the slot index
               // because no move has been done yet and all the pieces are in their starting slot
               let min = this.pieceArray[s].bounds[number][0];
               let max = this.pieceArray[s].bounds[number][1];
@@ -405,9 +405,9 @@ class CubeState {
   }
 
   /**
-   * When clicking on a facelet, two faces can be possibly rotated, depending on the mouse movement. 
+   * When clicking on a facelet, two faces can be possibly rotated, depending on the mouse movement.
    * Each face will be moved when the mouse moves along its direction.
-   * The direction for moving a face from a facelet is computed by doing a cross product 
+   * The direction for moving a face from a facelet is computed by doing a cross product
    * between two vectors: the first is the rotation axis, adjusted with the direction;
    * the second is the one that goes from the center of the moving face to the face to which the facelet belongs.
    */
@@ -438,9 +438,9 @@ class CubeState {
   }
 
   /**
-   * Try to intersect all the facelets with a given ray. 
-   * @param {number[]} rayStartPoint 
-   * @param {number[]} normalisedRayDir 
+   * Try to intersect all the facelets with a given ray.
+   * @param {number[]} rayStartPoint
+   * @param {number[]} normalisedRayDir
    * @returns the intersected facelet and the intersection point, or [null, null]
    */
   intersectFacelets(rayStartPoint, normalisedRayDir) {
@@ -473,7 +473,7 @@ class CubeState {
         let distance = mathUtils.distance3(temp_intersection, rayStartPoint); // distance from camera
         if (
           minDistance == null ||
-          (minDistance != null && distance < minDistance)
+          (distance < minDistance)
         ) {
           minDistance = distance;
           intersection = temp_intersection;
@@ -485,7 +485,7 @@ class CubeState {
   }
 
   /**
-   * Compute bounds of all pieces in order to use them in facelets. 
+   * Compute bounds of all pieces in order to use them in facelets.
    */
   setBoundsToPieces() {
     for (let p = 0; p < this.pieceArray.length; p++) {

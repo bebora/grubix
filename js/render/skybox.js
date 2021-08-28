@@ -81,25 +81,32 @@ export class SkyBox {
     this.gl.activeTexture(this.gl.TEXTURE0 + 3);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
-    const texturesWithTarget = getTexturesWithTarget(this.gl, this.cubemapDir);
-    for (const textureWithTarget of texturesWithTarget) {
-      const { target, url } = textureWithTarget;
+    let targetsWithTexture = getTexturesWithTarget(this.gl, this.cubemapDir);
+    let targetsWithImages = targetsWithTexture.map((el) => {
+      let image = new Image();
+      image.src = el.url;
+      image.decode();
+      return {
+        target: el.target,
+        image,
+      };
+    });
+    for (const textureWithTarget of targetsWithImages) {
+      const { target, image } = textureWithTarget;
 
       // render in the texture, before it's loaded
       this.gl.texImage2D(
         target,
         0,
         this.gl.RGBA,
-        1024,
-        1024,
+        256,
+        256,
         0,
         this.gl.RGBA,
         this.gl.UNSIGNED_BYTE,
         null
       );
 
-      const image = new Image();
-      image.src = url;
       await image.decode();
       // Now that the image has loaded upload it to the texture.
       this.gl.activeTexture(this.gl.TEXTURE0 + 3);
