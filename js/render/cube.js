@@ -37,6 +37,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     );
     this.textLocation = gl.getUniformLocation(program, "u_texture");
     this.normalMapLocation = gl.getUniformLocation(program, "u_normalMap");
+    this.depthMapLocation = gl.getUniformLocation(program, "u_depthMap")
 
     for (let i = 0; i < 26; i++) {
       let vao = gl.createVertexArray();
@@ -131,14 +132,16 @@ export function CubeRenderer(cube, gl, program, textureDir) {
    * Load the texture
    */
   this.loadTexture = async function () {
-    setLoadingInfo("normalmap", "Loading normal map");
     // Set the image sources to start the loading
     const image = new Image();
     image.src = `${textureDir}customCubeTexture.png`;
     const normalImage = new Image();
     normalImage.src = `${textureDir}customCubeNormal.png`;
+    const depthImage = new Image();
+    depthImage.src = `${textureDir}customCubeHeight.png`;
 
     // Create cube texture
+    setLoadingInfo("texture", "Loading texture");
     const texture = gl.createTexture();
     // Load the texture
     await image.decode();
@@ -150,7 +153,10 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.generateMipmap(gl.TEXTURE_2D);
 
+    removeLoadingInfo("texture");
+
     // Create normal texture
+    setLoadingInfo("normalmap", "Loading normal map");
     const normalTexture = gl.createTexture();
     // Load the normal texture
     await normalImage.decode();
@@ -170,6 +176,27 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     gl.generateMipmap(gl.TEXTURE_2D);
 
     removeLoadingInfo("normalmap");
+
+    const depthOffset = 5;
+    const depthTexture = gl.createTexture();
+    // Load the depth texture
+    await depthImage.decode();
+    gl.activeTexture(gl.TEXTURE0 + depthOffset);
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      depthImage
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    removeLoadingInfo("depthmap");
   };
 
   this.init();
@@ -181,6 +208,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
   this.renderCube = function (matrices) {
     gl.uniform1i(this.textLocation, 0);
     gl.uniform1i(this.normalMapLocation, 1);
+    gl.uniform1i(this.depthMapLocation, 5);
     gl.uniformMatrix4fv(
       this.transposeViewMatrixLocation,
       false,
