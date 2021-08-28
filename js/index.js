@@ -107,6 +107,10 @@ const worldViewMatrixLocation = gl.getUniformLocation(
   program,
   "worldViewMatrix"
 );
+const transposeViewMatrixLocation = gl.getUniformLocation(
+  program,
+  "transposeViewMatrix"
+);
 const normalMatrixLocation = gl.getUniformLocation(program, "normalMatrix");
 
 const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
@@ -216,8 +220,15 @@ function drawFrame() {
     mathUtils.transposeMatrix(matrices.viewMatrix)
   );
 
+  // Matrix to convert normals from camera space to world space
+  let transposeViewMatrix = mathUtils.transposeMatrix(matrices.viewMatrix);
   gl.uniform1i(textLocation, 0);
   gl.uniform1i(normalMapLocation, 1);
+  gl.uniformMatrix4fv(
+    transposeViewMatrixLocation,
+    false,
+    mathUtils.transposeMatrix(transposeViewMatrix)
+  );
 
   lightRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
   ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);

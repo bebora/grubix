@@ -60,13 +60,13 @@ uniform vec3 ambientColor;
 uniform HemisphericAmbient hemispheric;
 uniform DiffuseInfo diffuse;
 uniform SpecularInfo specular;
+uniform mat4 transposeViewMatrix;
 
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
 in vec3 fs_bitangent;
-in vec3 fs_position; // TODO use it when necessary. Useless at the moment.
+in vec3 fs_position;
 in mat3 TBN;
-in vec3 fs_normal;
 
 uniform sampler2D u_texture;
 uniform sampler2D u_normalMap;
@@ -190,9 +190,8 @@ vec3 computeAmbientContribute(vec3 normal) {
   }
   else {
     // Skybox with irradiance
-    // TODO The normal here are in camera space, but it's a bit weird to have them like that (irradiance change moving the camera). Evaluate whether we should put them in world space
-    // TODO Easy solution would be to pass the view matrix
-    ambientContribute = texture(u_irradianceMap, normal).rgb;
+    vec3 normalWorldSpace = vec3(normalize(transposeViewMatrix * vec4(normal,1)));
+    ambientContribute = texture(u_irradianceMap, normalWorldSpace).rgb;
   }
   return ambientContribute;
 }
@@ -213,6 +212,6 @@ void main() {
 
   vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(normal);
 
-  vec3 colour_with_ambient = clamp(diffuseSpecularContribute + ambientContribute , 0.0, 1.0);
+  vec3 colour_with_ambient = clamp(ambientContribute , 0.0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);
 }

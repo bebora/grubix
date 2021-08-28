@@ -57,7 +57,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
   /**
    * @param {MouseEvent} event
    */
-  async function doMouseUp(event) {
+  async function releaseMouse(event) {
     let endX = event.clientX;
     let endY = event.clientY;
     lastMouseX = -100;
@@ -308,7 +308,8 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
 
   function initInputEventListeners() {
     canvas.addEventListener("mousedown", doMouseDown, false);
-    canvas.addEventListener("mouseup", doMouseUp, false);
+    canvas.addEventListener("mouseup", releaseMouse, false);
+    canvas.addEventListener("mouseout", releaseMouse, false);
     canvas.addEventListener("mousemove", doMouseMove, false);
     canvas.addEventListener("wheel", doWheel, false);
   }

@@ -7,7 +7,6 @@ in vec3 a_tangent;
 in vec3 a_bitangent;
 
 out vec2 fs_textureCoord;
-out vec3 fs_normal;
 out vec3 fs_tangent;
 out vec3 fs_bitangent;
 out vec3 fs_position;
@@ -15,11 +14,9 @@ out mat3 TBN;
 
 uniform mat4 worldViewProjectionMatrix;
 uniform mat4 worldViewMatrix;
-uniform mat4 normalMatrix;
 
 void main() {
   fs_textureCoord = a_textureCoord;
-  fs_normal = mat3(normalMatrix) * a_normal;
   fs_tangent = a_tangent;
   fs_bitangent = a_bitangent;
 
