@@ -1,10 +1,6 @@
-import {
-  fetchFile,
-  mathUtils,
-  projectionUtils,
-  shaderUtils,
-} from "../utils.js";
+import { fetchFile, mathUtils, shaderUtils } from "../utils.js";
 import "../lib/webgl-obj-loader.min.js";
+import { getTexturesWithTarget } from "../utils.js";
 
 /**
  * Manage the rendering of a static skybox
@@ -76,40 +72,7 @@ export class SkyBox {
   }
 
   /**
-   * Retrieve the texture targets together with the url of the file
-   * @returns {{target: GLenum, url: string}[]}
-   */
-  getTexturesWithTarget() {
-    return [
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-        url: `${this.cubemapDir}right.jpg`,
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-        url: `${this.cubemapDir}left.jpg`,
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-        url: `${this.cubemapDir}top.jpg`,
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-        url: `${this.cubemapDir}bottom.jpg`,
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-        url: `${this.cubemapDir}front.jpg`,
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-        url: `${this.cubemapDir}back.jpg`,
-      },
-    ];
-  }
-
-  /**
-   * Render the Skybox in the given canvas
+   * Load the texture
    */
   async loadTexture() {
     // Load the texture
@@ -118,7 +81,7 @@ export class SkyBox {
     this.gl.activeTexture(this.gl.TEXTURE0 + 3);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
-    const texturesWithTarget = this.getTexturesWithTarget();
+    const texturesWithTarget = getTexturesWithTarget(this.gl, this.cubemapDir);
     for (const textureWithTarget of texturesWithTarget) {
       const { target, url } = textureWithTarget;
 
@@ -137,12 +100,18 @@ export class SkyBox {
 
       const image = new Image();
       image.src = url;
-      let gl = this.gl;
       await image.decode();
       // Now that the image has loaded upload it to the texture.
-      gl.activeTexture(gl.TEXTURE0 + 3);
-      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-      gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+      this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
+      this.gl.texImage2D(
+        target,
+        0,
+        this.gl.RGBA,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        image
+      );
     }
     this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
     this.gl.texParameteri(

@@ -9,22 +9,28 @@ import { Window } from "./ui/window.js";
 import { LightSideBar } from "./ui/sidebar/light.js";
 import { LightState } from "./state/light.js";
 import { LightRenderer } from "./render/light.js";
+import { AmbientState } from "./state/ambient.js";
+import { AmbientSideBar } from "./ui/sidebar/ambient.js";
+import { AmbientRenderer } from "./render/ambient.js";
 
-const mainAmbientColorInputElement =
-  document.getElementById("ambient-color-up");
+const mainAmbientColorInputElement = document.getElementById("ambient-color");
 let mainAmbientColor = parseHexColor(mainAmbientColorInputElement.value);
 
-const secondaryAmbientColorInputElement =
-  document.getElementById("ambient-color-down");
+const secondaryAmbientColorInputElement = document.getElementById(
+  "hemispheric-upper-color"
+);
 let secondaryAmbientColor = parseHexColor(
   secondaryAmbientColorInputElement.value
 );
 
-const ambientAzimuthInputElement = document.getElementById("ambient-azimuth");
+const ambientAzimuthInputElement = document.getElementById(
+  "hemispheric-azimuth"
+);
 let ambientAzimuth = parseFloat(ambientAzimuthInputElement.value);
 
-const ambientElevationInputElement =
-  document.getElementById("ambient-elevation");
+const ambientElevationInputElement = document.getElementById(
+  "hemispheric-elevation"
+);
 let ambientElevation = parseFloat(ambientElevationInputElement.value);
 
 const ambientTypeInputElement = document.getElementById("ambient-select");
@@ -56,6 +62,7 @@ const mainTest = async function () {
   const meshDir = `${assetDir}meshes/`;
   const textureDir = `${assetDir}textures/`;
   const skyboxDir = `${assetDir}skybox/`;
+  const irradianceDir = `${assetDir}irradiance/`;
 
   let cube = await initializeCube(meshDir);
 
@@ -63,6 +70,7 @@ const mainTest = async function () {
   const cameraState = new CameraState();
   const canvasState = new CanvasState(gl, canvas);
   const lightState = new LightState();
+  const ambientState = new AmbientState();
 
   const matrices = {
     perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -74,6 +82,7 @@ const mainTest = async function () {
   const mouseHandler = new MouseHandler(gl.canvas, cube, cameraState, matrices);
   mouseHandler.initInputEventListeners();
   new LightSideBar(lightState);
+  new AmbientSideBar(ambientState);
 
   let sidebarOpen = true;
   document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
@@ -89,24 +98,33 @@ const mainTest = async function () {
     canvasState.expandToParent();
   });
 
+  // Load renderers
   const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
   await skyBox.init();
 
   // Load and compile shaders
-  const vertexShaderStr = await fetchFile(`${shaderDir}vs_example.glsl`);
-  const fragmentShaderStr = await fetchFile(`${shaderDir}fs_example.glsl`);
+  const vertexShaderStr = await fetchFile(`${shaderDir}main_vs.glsl`);
+  const fragmentShaderStr = await fetchFile(`${shaderDir}main_fs.glsl`);
   const program = shaderUtils.createAndCompileShaders(gl, [
     vertexShaderStr,
     fragmentShaderStr,
   ]);
+
   gl.useProgram(program);
+  let lightRenderer = new LightRenderer(lightState, gl, program);
+  let ambientRenderer = new AmbientRenderer(
+    ambientState,
+    gl,
+    program,
+    irradianceDir
+  );
+  await ambientRenderer.loadTexture(gl);
 
   // Clear viewport
   gl.clearColor(0.85, 1.0, 0.85, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST);
 
-  let lightRenderer = new LightRenderer(lightState, gl, program);
   // Obtain locations of attributes and uniforms
   const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   const normalAttributeLocation = gl.getAttribLocation(program, "a_normal");
@@ -289,7 +307,8 @@ const mainTest = async function () {
 
     gl.uniform1i(normalMapLocation, 1);
 
-    lightRenderer.injectUniform(matrices.viewMatrix);
+    lightRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
+    ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
 
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
@@ -335,7 +354,8 @@ const mainTest = async function () {
       );
     }
 
-    skyBox.renderSkyBox(matrices.perspectiveMatrix, cameraState);
+    if (ambientState.type === "skybox")
+      skyBox.renderSkyBox(matrices.perspectiveMatrix, cameraState);
 
     window.requestAnimationFrame(drawFrame);
   }

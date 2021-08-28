@@ -33,9 +33,18 @@ struct LightInfo {
   vec3 color;
 };
 
+struct HemisphericAmbient {
+  vec3 upperColor;
+  vec3 lowerColor;
+  vec3 direction;
+};
+
 uniform DirectLight directLights[10];
 uniform PointLight pointLights[10];
 uniform SpotLight spotLights[10];
+uniform int ambientType;
+uniform vec3 ambientColor;
+uniform HemisphericAmbient hemispheric;
 
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
@@ -45,14 +54,12 @@ in mat3 TBN;
 in vec3 fs_normal;
 
 uniform vec3 materialDiffuseColor; //material diffuse color
-uniform vec3 mainAmbientColor; // ambient color or upper color for hemispheric
-uniform vec3 secondaryAmbientColor; // lower color for hemispheric
-uniform vec3 ambientUpVector; // up direction for hemispheric
-uniform int ambientType; // 0 = regular ambient, 1 = hemispheric
 uniform float textureIntensity; // texture intensity that balances texture and diffuse color
 
 uniform sampler2D u_texture;
 uniform sampler2D u_normalMap;
+
+uniform samplerCube u_irradianceMap;
 
 out vec4 outColor;
 
@@ -82,17 +89,7 @@ vec3 computeDiffuse(LightInfo lightInfo, vec3 compoundDiffuseColour, vec3 normal
 }
 
 
-void main() {
-  vec3 normalFromMap = vec3(texture(u_normalMap, fs_textureCoord));
-  vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;
-  vec3 finalNormal = normalize(TBN * adjustedNormal);
-  // vec3 norm = normalize(fs_normal); // TODO use fs_normal if normal map disabled
-  vec3 norm = finalNormal;
-
-
-  vec3 base_texture_colour = vec3(texture(u_texture, fs_textureCoord));
-  vec3 compoundDiffuseColour = textureIntensity * base_texture_colour + (1.0 - textureIntensity) * materialDiffuseColor;
-
+vec3 computeDiffuseContribute(DirectLight directLights[10], PointLight pointLights[10], SpotLight spotLights[10], vec3 compoundDiffuseColour, vec3 norm) {
   vec3 diffuseContribute = vec3(0,0,0);
   // Compute contributes from direct lights
   for (int i = 0; i < 10; i++) {
@@ -118,17 +115,46 @@ void main() {
     LightInfo spotLight = spotLightInfo(spotLights[i].position, spotLights[i].direction, spotLights[i].decay, spotLights[i].target, spotLights[i].color, spotLights[i].coneOut, spotLights[i].coneIn);
     diffuseContribute += computeDiffuse(spotLight, compoundDiffuseColour, norm);
   }
+
+  return diffuseContribute;
+}
+
+vec3 computeAmbientContribute(vec3 normal, vec3 compoundAmbientDiffuseColour) {
   vec3 ambientContribute;
-  if (ambientType == 0) {
-    ambientContribute = mainAmbientColor * compoundDiffuseColour;
+  if (ambientType == 1) {
+    // Ambient regular
+    ambientContribute = ambientColor * compoundAmbientDiffuseColour;
   }
-  else if (ambientType == 1) {
-    float ambientMultiplier = (dot(norm, ambientUpVector) + 1.0) / 2.0;
+  else if (ambientType == 2) {
+    float ambientMultiplier = (dot(normal, hemispheric.direction) + 1.0) / 2.0;
     ambientContribute = (
-      mainAmbientColor * ambientMultiplier +
-      secondaryAmbientColor * (1.0 - ambientMultiplier)
-    ) * compoundDiffuseColour;
+    hemispheric.upperColor * ambientMultiplier +
+    hemispheric.lowerColor * (1.0 - ambientMultiplier)
+    ) * compoundAmbientDiffuseColour;
   }
+  else {
+    // Skybox with irradiance
+    ambientContribute = texture(u_irradianceMap, normal).rgb;
+  }
+  return ambientContribute;
+}
+
+
+void main() {
+  vec3 normalFromMap = vec3(texture(u_normalMap, fs_textureCoord));
+  vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;
+  vec3 finalNormal = normalize(TBN * adjustedNormal);
+  // vec3 norm = normalize(fs_normal); // TODO use fs_normal if normal map disabled
+  vec3 norm = finalNormal;
+
+
+  vec3 base_texture_colour = vec3(texture(u_texture, fs_textureCoord));
+  // We assume that the material colour is the same for diffuse and ambient
+  vec3 compoundAmbientDiffuseColour = textureIntensity * base_texture_colour + (1.0 - textureIntensity) * materialDiffuseColor;
+
+  vec3 diffuseContribute = computeDiffuseContribute(directLights, pointLights, spotLights, compoundAmbientDiffuseColour, norm);
+  vec3 ambientContribute = computeAmbientContribute(norm, compoundAmbientDiffuseColour);
+
   vec3 colour_with_ambient = clamp(diffuseContribute + ambientContribute , .0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);
 }

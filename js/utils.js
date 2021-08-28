@@ -804,6 +804,41 @@ function MouseQueue(size) {
   };
 }
 
+/**
+ * Retrieve the texture targets together with the url of the file
+ * @param {WebGL2RenderingContext} gl
+ * @param {string} dir the directory of the texture to load
+ * @returns {{target: GLenum, url: string}[]}
+ */
+function getTexturesWithTarget(gl, dir) {
+  return [
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      url: `${dir}right.jpg`,
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      url: `${dir}left.jpg`,
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      url: `${dir}top.jpg`,
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      url: `${dir}bottom.jpg`,
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      url: `${dir}front.jpg`,
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      url: `${dir}back.jpg`,
+    },
+  ];
+}
+
 export {
   parseHexColor,
   rgbToHex,
@@ -813,4 +848,5 @@ export {
   fetchFile,
   shaderUtils,
   MouseQueue,
+  getTexturesWithTarget,
 };

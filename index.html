@@ -92,24 +92,31 @@
         <input type="range" min="0" max="100" value = "50" id="light-spot-cone-in">
         <br>
       </div>
-      <br>
-      <label for="ambient-select">Ambient type</label>
+    </div>
+    <div class="option-container">
+    <label for="ambient-select">Ambient type</label>
       <select id="ambient-select">
-        <option value="0" selected>Regular</option>
-        <option value="1">Hemispheric</option>
+        <option value="skybox" selected>Skybox + Irradiance</option>
+        <option value="ambient">Ambient</option>
+        <option value="hemispheric">Hemispheric</option>
       </select>
-      <br>
-      <label for="ambient-color-up">Main ambient color</label>
-      <input type="color" id="ambient-color-up" name="ambient-color-up" value="#c0ffee">
-      <br>
-      <label for="ambient-color-down">Secondary ambient color</label>
-      <input type="color" id="ambient-color-down" name="ambient-color-down" value="#17a11a">
-      <br>
-      <label for="ambient-azimuth">Azimuth ambient direction</label>
-      <input type="range" min="-180" max="180" value="0" id="ambient-azimuth">
-      <br>
-      <label for="ambient-elevation">Elevation ambient direction</label>
-      <input type="range" min="0" max="180" value="90" id="ambient-elevation">
+      <div id="ambient" class="hidden">
+        <label for="ambient-color">Main ambient color</label>
+        <input type="color" id="ambient-color" name="ambient-color" value="#c0ffee">
+      </div>
+      <div id="hemispheric" class="hidden">
+        <label for="hemispheric-upper-color">Upper color</label>
+        <input type="color" id="hemispheric-upper-color" name="hemispheric-upper-color" value="#c0ffee">
+        <br>
+        <label for="hemispheric-lower-color">Lower color</label>
+        <input type="color" id="hemispheric-lower-color" name="hemispheric-lower-color" value="#beb02a">
+        <br>
+        <label for="hemispheric-azimuth">Azimuth direction</label>
+        <input type="range" min="-180" max="180" value="0" id="hemispheric-azimuth">
+        <br>
+        <label for="hemispheric-elevation">Elevation direction</label>
+        <input type="range" min="0" max="180" value="90" id="hemispheric-elevation">
+      </div>
     </div>
     <div class="option-container">
       <label for="diffuse-select">Diffuse type</label>

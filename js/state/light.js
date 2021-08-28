@@ -1,8 +1,8 @@
+import { mathUtils } from "../utils.js";
+
 /**
  * Manage a single light with a given type and option
  */
-import { mathUtils } from "../utils.js";
-
 function Light() {
   /**
    * Update the light with the related options

@@ -109,8 +109,9 @@ export function LightRenderer(lightState, gl, program) {
   /**
    * Pass view matrix to transform light position and direction in camera space from world space
    * @param viewMatrix
+   * @param lightDirMatrix
    */
-  this.injectUniform = function (viewMatrix) {
+  this.injectUniform = function (viewMatrix, lightDirMatrix) {
     let pointLights = lightState.lights.filter((el) => el.type === "point");
     let spotLights = lightState.lights.filter((el) => el.type === "spot");
     let directLights = lightState.lights.filter((el) => el.type === "direct");
@@ -122,9 +123,7 @@ export function LightRenderer(lightState, gl, program) {
 
         // Directional light transformed by the 3x3 submatrix
         let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
-          mathUtils.sub3x3from4x4(
-            mathUtils.invertMatrix(mathUtils.transposeMatrix(viewMatrix))
-          ),
+          mathUtils.sub3x3from4x4(lightDirMatrix),
           parameters.direction
         );
         gl.uniform1i(uniforms.direct[i].valid, 1);
@@ -173,9 +172,7 @@ export function LightRenderer(lightState, gl, program) {
 
         // Directional light transformed by the 3x3 submatrix
         let directionalLightTransformed = mathUtils.multiplyMatrix3Vector3(
-          mathUtils.sub3x3from4x4(
-            mathUtils.invertMatrix(mathUtils.transposeMatrix(viewMatrix))
-          ),
+          mathUtils.sub3x3from4x4(lightDirMatrix),
           parameters.direction
         );
         // Positional light transformed by the view matrix
