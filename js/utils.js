@@ -799,7 +799,6 @@ function MouseQueue(size) {
     if (currentTime - mouseRecord.time > 200) {
       return null;
     }
-    console.log("FOUND", this.queue[lowest].time - currentTime);
     return this.queue[lowest];
   };
 }

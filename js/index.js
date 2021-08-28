@@ -12,39 +12,9 @@ import { LightRenderer } from "./render/light.js";
 import { AmbientState } from "./state/ambient.js";
 import { AmbientSideBar } from "./ui/sidebar/ambient.js";
 import { AmbientRenderer } from "./render/ambient.js";
-
-const mainAmbientColorInputElement = document.getElementById("ambient-color");
-let mainAmbientColor = parseHexColor(mainAmbientColorInputElement.value);
-
-const secondaryAmbientColorInputElement = document.getElementById(
-  "hemispheric-upper-color"
-);
-let secondaryAmbientColor = parseHexColor(
-  secondaryAmbientColorInputElement.value
-);
-
-const ambientAzimuthInputElement = document.getElementById(
-  "hemispheric-azimuth"
-);
-let ambientAzimuth = parseFloat(ambientAzimuthInputElement.value);
-
-const ambientElevationInputElement = document.getElementById(
-  "hemispheric-elevation"
-);
-let ambientElevation = parseFloat(ambientElevationInputElement.value);
-
-const ambientTypeInputElement = document.getElementById("ambient-select");
-let ambientType = parseHexColor(secondaryAmbientColorInputElement.value);
-
-const textureIntensityInputElement =
-  document.getElementById("texture-intensity");
-let textureIntensity = parseFloat(textureIntensityInputElement.value) / 100;
-
-const materialDiffuseColorInputElement =
-  document.getElementById("material-color");
-let materialDiffuseColor = parseHexColor(
-  materialDiffuseColorInputElement.value
-);
+import { DiffuseState } from "./state/diffuse.js";
+import { DiffuseSideBar } from "./ui/sidebar/diffuse.js";
+import { DiffuseRenderer } from "./render/diffuse.js";
 
 const canvas = document.getElementById("canvas");
 /** @type{WebGL2RenderingContext} */
@@ -71,6 +41,7 @@ const mainTest = async function () {
   const canvasState = new CanvasState(gl, canvas);
   const lightState = new LightState();
   const ambientState = new AmbientState();
+  const diffuseState = new DiffuseState();
 
   const matrices = {
     perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -83,6 +54,7 @@ const mainTest = async function () {
   mouseHandler.initInputEventListeners();
   new LightSideBar(lightState);
   new AmbientSideBar(ambientState);
+  new DiffuseSideBar(diffuseState);
 
   let sidebarOpen = true;
   document.getElementById("toggle-sidebar").addEventListener("click", (e) => {
@@ -118,6 +90,7 @@ const mainTest = async function () {
     program,
     irradianceDir
   );
+  let diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
   await ambientRenderer.loadTexture(gl);
 
   // Clear viewport
@@ -137,14 +110,7 @@ const mainTest = async function () {
     "worldViewMatrix"
   );
   const normalMatrixLocation = gl.getUniformLocation(program, "normalMatrix");
-  const textureIntensityLocation = gl.getUniformLocation(
-    program,
-    "textureIntensity"
-  );
-  const materialDiffuseColorLocation = gl.getUniformLocation(
-    program,
-    "materialDiffuseColor"
-  );
+
   const uvAttributeLocation = gl.getAttribLocation(program, "a_textureCoord");
   const tangentAttributeLocation = gl.getAttribLocation(program, "a_tangent");
   const bitangentAttributeLocation = gl.getAttribLocation(
@@ -153,19 +119,6 @@ const mainTest = async function () {
   );
   const textLocation = gl.getUniformLocation(program, "u_texture");
   const normalMapLocation = gl.getUniformLocation(program, "u_normalMap");
-  const mainAmbientColorLocation = gl.getUniformLocation(
-    program,
-    "mainAmbientColor"
-  );
-  const secondaryAmbientColorLocation = gl.getUniformLocation(
-    program,
-    "secondaryAmbientColor"
-  );
-  const ambientUpVectorLocation = gl.getUniformLocation(
-    program,
-    "ambientUpVector"
-  );
-  const ambientTypeLocation = gl.getUniformLocation(program, "ambientType");
 
   for (let i = 0; i < 26; i++) {
     let vao = gl.createVertexArray();
@@ -272,13 +225,6 @@ const mainTest = async function () {
 
     matrices.perspectiveMatrix = canvasState.perspectiveMatrix;
 
-    const ambientInnerRadius = Math.cos(mathUtils.degToRad(ambientElevation));
-    const ambientUpVector = [
-      ambientInnerRadius * Math.cos(mathUtils.degToRad(ambientAzimuth)),
-      Math.sin(mathUtils.degToRad(ambientElevation)),
-      -ambientInnerRadius * Math.sin(mathUtils.degToRad(ambientAzimuth)),
-    ];
-
     matrices.viewMatrix = cameraState.viewMatrix;
 
     // Matrix to transform light direction from world to camera space
@@ -286,29 +232,13 @@ const mainTest = async function () {
       mathUtils.transposeMatrix(matrices.viewMatrix)
     );
 
-    const cameraSpaceAmbientDirection = mathUtils.multiplyMatrix3Vector3(
-      mathUtils.sub3x3from4x4(lightDirMatrix),
-      ambientUpVector
-    );
-
-    gl.uniform1f(textureIntensityLocation, textureIntensity);
-
-    gl.uniform3fv(materialDiffuseColorLocation, materialDiffuseColor);
-
-    gl.uniform3fv(mainAmbientColorLocation, mainAmbientColor);
-
-    gl.uniform3fv(secondaryAmbientColorLocation, secondaryAmbientColor);
-
-    gl.uniform3fv(ambientUpVectorLocation, cameraSpaceAmbientDirection);
-
-    gl.uniform1i(ambientTypeLocation, ambientType);
-
     gl.uniform1i(textLocation, 0);
 
     gl.uniform1i(normalMapLocation, 1);
 
     lightRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
     ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
+    diffuseRenderer.injectUniform();
 
     for (let i = 0; i < 26; i++) {
       let worldMatrix = cube.pieceArray[i].worldMatrix;
@@ -362,27 +292,5 @@ const mainTest = async function () {
   document.getElementById("loading-spinner-container").style.display = "none";
   drawFrame();
 };
-
-mainAmbientColorInputElement.addEventListener("input", (e) => {
-  mainAmbientColor = parseHexColor(e.target.value);
-});
-secondaryAmbientColorInputElement.addEventListener("input", (e) => {
-  secondaryAmbientColor = parseHexColor(e.target.value);
-});
-ambientTypeInputElement.addEventListener("input", (e) => {
-  ambientType = parseInt(e.target.value);
-});
-ambientAzimuthInputElement.addEventListener("input", (e) => {
-  ambientAzimuth = parseFloat(e.target.value);
-});
-ambientElevationInputElement.addEventListener("input", (e) => {
-  ambientElevation = parseFloat(e.target.value);
-});
-textureIntensityInputElement.addEventListener("input", (e) => {
-  textureIntensity = parseFloat(e.target.value) / 100;
-});
-materialDiffuseColorInputElement.addEventListener("input", (e) => {
-  materialDiffuseColor = parseHexColor(e.target.value);
-});
 
 await mainTest();

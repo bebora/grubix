@@ -471,10 +471,7 @@ class CubeState {
       }
       if (withinBounds) {
         let distance = mathUtils.distance3(temp_intersection, rayStartPoint); // distance from camera
-        if (
-          minDistance == null ||
-          (distance < minDistance)
-        ) {
+        if (minDistance == null || distance < minDistance) {
           minDistance = distance;
           intersection = temp_intersection;
           intersectedFacelet = facelet;

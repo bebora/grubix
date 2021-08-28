@@ -26,7 +26,7 @@ function AmbientHTMLOptions() {
  * @param {AmbientState} ambientState
  */
 export function AmbientOptions(elements, ambientState) {
-  // Note that these fields affect other classes than this, therefore their update event is managed in LightSideBar
+  // Note that these fields affect other classes than this, therefore their update event is managed in AmbientSideBar
   this.type = elements.type.value;
 
   this.ambient = {
@@ -111,7 +111,4 @@ export function AmbientSideBar(ambientState) {
   htmlElements.type.addEventListener("input", (e) => {
     that.changeAmbientType();
   });
-
-  // TODO Ambient / Specular / Etc.. imo other file ;)
-  // TODO After, move the rendering of everything in the rendering folder
 }

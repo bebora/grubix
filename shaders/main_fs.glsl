@@ -39,12 +39,20 @@ struct HemisphericAmbient {
   vec3 direction;
 };
 
+struct DiffuseInfo {
+  int type;
+  vec3 color;
+  float texture;
+  float threshold;
+};
+
 uniform DirectLight directLights[10];
 uniform PointLight pointLights[10];
 uniform SpotLight spotLights[10];
 uniform int ambientType;
 uniform vec3 ambientColor;
 uniform HemisphericAmbient hemispheric;
+uniform DiffuseInfo diffuse;
 
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
@@ -52,9 +60,6 @@ in vec3 fs_bitangent;
 in vec3 fs_position; // TODO use it when necessary. Useless at the moment.
 in mat3 TBN;
 in vec3 fs_normal;
-
-uniform vec3 materialDiffuseColor; //material diffuse color
-uniform float textureIntensity; // texture intensity that balances texture and diffuse color
 
 uniform sampler2D u_texture;
 uniform sampler2D u_normalMap;
@@ -85,11 +90,24 @@ LightInfo spotLightInfo(vec3 position, vec3 direction, int decay, float target, 
 }
 
 vec3 computeDiffuse(LightInfo lightInfo, vec3 compoundDiffuseColour, vec3 normal) {
-  return lightInfo.color * compoundDiffuseColour * clamp(dot(normal, lightInfo.direction), 0.0, 1.0);
+  vec3 diffuseColour = lightInfo.color * compoundDiffuseColour;
+  float lightDotNormals = clamp(dot(normal, lightInfo.direction), 0.0, 1.0);
+
+  if (diffuse.type == 0) {
+    // Lambert
+    return diffuseColour * lightDotNormals;
+  }
+  else {
+    // Toon
+    if (lightDotNormals > diffuse.threshold) {
+      return diffuseColour;
+    }
+    else
+      return vec3(0,0,0);
+  }
 }
 
-
-vec3 computeDiffuseContribute(DirectLight directLights[10], PointLight pointLights[10], SpotLight spotLights[10], vec3 compoundDiffuseColour, vec3 norm) {
+vec3 computeDiffuseContribute(vec3 compoundDiffuseColour, vec3 norm) {
   vec3 diffuseContribute = vec3(0,0,0);
   // Compute contributes from direct lights
   for (int i = 0; i < 10; i++) {
@@ -152,10 +170,10 @@ void main() {
 
   vec3 base_texture_colour = vec3(texture(u_texture, fs_textureCoord));
   // We assume that the material colour is the same for diffuse and ambient
-  vec3 compoundAmbientDiffuseColour = textureIntensity * base_texture_colour + (1.0 - textureIntensity) * materialDiffuseColor;
+  vec3 compoundAmbientDiffuseColour = diffuse.texture * base_texture_colour + (1.0 - diffuse.texture) * diffuse.color;
 
-  vec3 diffuseContribute = computeDiffuseContribute(directLights, pointLights, spotLights, compoundAmbientDiffuseColour, norm);
-  vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(adjustedNormal);
+  vec3 diffuseContribute = computeDiffuseContribute(compoundAmbientDiffuseColour, norm);
+  vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(norm);
 
   vec3 colour_with_ambient = clamp(diffuseContribute + ambientContribute , 0.0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);

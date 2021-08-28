@@ -121,15 +121,21 @@
     <div class="option-container">
       <label for="diffuse-select">Diffuse type</label>
       <select id="diffuse-select">
-        <option value="1" selected>Option 1</option>
-        <option value="2">Option 2</option>
+        <option value="lambert" selected>Lambert</option>
+        <option value="toon">Toon</option>
       </select>
       <br>
-      <label for="texture-intensity">Texture intensity</label>
-      <input type="range" min="0" max="100" value="100" id="texture-intensity">
+      <label for="diffuse-color">Color</label>
+      <input type="color" id="diffuse-color" name="diffuse-color" value="#beb02a">
       <br>
-      <label for="material-color">Material color:</label>
-      <input type="color" id="material-color" name="ambient-color" value="#beb02a">
+      <label for="diffuse-texture">Texture Intensity</label>
+      <input type="range" min="0" max="100" value="100" id="diffuse-texture">
+      <br>
+      <div id="toon" class="hidden">
+        <label for="diffuse-toon-threshold">Toon Threshold</label>
+        <input type="range" min="0" max="100" value="0" id="diffuse-toon-threshold">
+        <br>
+      </div>
     </div>
     <div class="option-container">
       <label for="specular-select">Specular type</label>

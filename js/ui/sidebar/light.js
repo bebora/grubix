@@ -344,6 +344,4 @@ export function LightSideBar(lightState) {
 
   // Add first light with default state
   this.addLight();
-  // TODO Ambient / Specular / Etc.. imo other file ;)
-  // TODO After, move the rendering of everything in the rendering folder
 }

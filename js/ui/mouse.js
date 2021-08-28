@@ -81,7 +81,6 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
           mathUtils.scalarProduct2(diffVect, lockedDir)
         );
         inertia = speed ? (speed > inertiaThreshold ? inertiaDir : 0) : 0;
-        console.log(inertia + "\n" + inertiaDir);
       }
 
       moveActivated = false;
