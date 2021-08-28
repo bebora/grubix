@@ -311,25 +311,6 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
     canvas.addEventListener("mouseup", doMouseUp, false);
     canvas.addEventListener("mousemove", doMouseMove, false);
     canvas.addEventListener("wheel", doWheel, false);
-
-    const scrambleButtonElement = document.getElementById("scramble");
-    scrambleButtonElement.addEventListener("click", async function () {
-      cube.transitionInProgress = true;
-      await cube.scramble();
-      cube.transitionInProgress = false;
-    });
-
-    const solveButtonElement = document.getElementById("solve");
-    solveButtonElement.addEventListener("click", async function () {
-      cube.transitionInProgress = true;
-      await cube.solve();
-      cube.transitionInProgress = false;
-    });
-
-    const resetButtonElement = document.getElementById("reset");
-    resetButtonElement.addEventListener("click", function () {
-      cube.reset();
-    });
   }
 
   return {
