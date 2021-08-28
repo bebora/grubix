@@ -17,4 +17,9 @@ export function ToggleSideBar(canvasState) {
     sidebarOpen = !sidebarOpen;
     canvasState.expandToParent();
   });
+
+  const resizeObserver = new ResizeObserver((_) => {
+    canvasState.expandToParent();
+  });
+  resizeObserver.observe(document.getElementById("sidebar"));
 }
