@@ -1,5 +1,6 @@
 import { getTexturesWithTarget, mathUtils } from "../utils.js";
 import { fromTypeToId } from "../state/ambient.js";
+import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
 
 /**
  * Manage the rendering of the ambientState, by injecting the uniform values related to the ambient options
@@ -61,7 +62,7 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
         image,
       };
     });
-    for (const textureWithTarget of targetsWithImages) {
+    for (const [index, textureWithTarget] of targetsWithImages.entries()) {
       const { target, image } = textureWithTarget;
 
       // render in the texture, before it's loaded
@@ -77,6 +78,10 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
         null
       );
 
+      setLoadingInfo(
+        "irradiance",
+        `Loading irradiance textures ${index + 1}/6`
+      );
       await image.decode();
       // Now that the image has loaded upload it to the texture.
       gl.activeTexture(gl.TEXTURE0 + 4);
@@ -89,6 +94,8 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
       gl.TEXTURE_MIN_FILTER,
       gl.LINEAR_MIPMAP_LINEAR
     );
+
+    removeLoadingInfo("irradiance");
   };
 
   let uniforms = this.initUniforms();

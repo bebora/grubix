@@ -1,4 +1,5 @@
 import { mathUtils } from "../utils.js";
+import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
 
 /**
  * Manage the rendering of the Rubik cube :cube:
@@ -130,6 +131,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
    * Load the texture
    */
   this.loadTexture = async function () {
+    setLoadingInfo("normalmap", "Loading normal map");
     // Set the image sources to start the loading
     const image = new Image();
     image.src = `${textureDir}customCubeTexture.png`;
@@ -166,12 +168,14 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.generateMipmap(gl.TEXTURE_2D);
+
+    removeLoadingInfo("normalmap");
   };
 
   this.init();
 
   /**
-   * Render the rubik cube bby drawing the 26 cubes
+   * Render the Rubik's cube by drawing the 26 cubes
    * @param {{perspectiveMatrix: number[], viewMatrix: number[], transposeViewMatrix: number[]}} matrices
    */
   this.renderCube = function (matrices) {

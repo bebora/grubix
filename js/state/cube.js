@@ -1,6 +1,7 @@
 import { mathUtils, fetchFile, transformUtils } from "../utils.js";
 import { generateScramble } from "../lib/scramble.js";
 import "../lib/webgl-obj-loader.min.js";
+import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
 
 const rotMatrixDict = {
   x: transformUtils.makeRotateXMatrix,
@@ -44,6 +45,7 @@ async function initializePieces(meshDir) {
 
   // Every .obj file will have its information stored in a Piece object
   for (let id = 0; id < 26; id++) {
+    setLoadingInfo("cubemesh", `Loading cube meshes ${id+1}/26`);
     let meshObjStr = await promises[id];
     let meshObj = new OBJ.Mesh(meshObjStr);
     meshObj.calculateTangentsAndBitangents();
@@ -59,6 +61,7 @@ async function initializePieces(meshDir) {
       )
     );
   }
+  removeLoadingInfo("cubemesh");
   return pieceArray;
 }
 

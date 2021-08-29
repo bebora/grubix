@@ -21,6 +21,7 @@ import { SpecularRenderer } from "./render/specular.js";
 import { ToggleSideBar } from "./ui/sidebar/toggle.js";
 import { CubeSideBar } from "./ui/sidebar/cube.js";
 import { CubeRenderer } from "./render/cube.js";
+import { removeLoadingOverlay } from "./ui/loading.js";
 
 // Check and retrieve webgl rendering context
 const canvas = document.getElementById("canvas");
@@ -130,5 +131,5 @@ function drawFrame() {
 
   window.requestAnimationFrame(drawFrame);
 }
-document.getElementById("loading-spinner-container").style.display = "none";
+removeLoadingOverlay();
 drawFrame();

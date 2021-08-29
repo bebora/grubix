@@ -1,6 +1,7 @@
 import { fetchFile, mathUtils, shaderUtils } from "../utils.js";
 import "../lib/webgl-obj-loader.min.js";
 import { getTexturesWithTarget } from "../utils.js";
+import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
 
 /**
  * Manage the rendering of a static skybox
@@ -91,7 +92,7 @@ export class SkyBox {
         image,
       };
     });
-    for (const textureWithTarget of targetsWithImages) {
+    for (const [index, textureWithTarget] of targetsWithImages.entries()) {
       const { target, image } = textureWithTarget;
 
       // render in the texture, before it's loaded
@@ -107,6 +108,7 @@ export class SkyBox {
         null
       );
 
+      setLoadingInfo("skybox", `Loading skybox textures ${index + 1}/6`);
       await image.decode();
       // Now that the image has loaded upload it to the texture.
       this.gl.activeTexture(this.gl.TEXTURE0 + 3);
@@ -126,6 +128,8 @@ export class SkyBox {
       this.gl.TEXTURE_MIN_FILTER,
       this.gl.LINEAR_MIPMAP_LINEAR
     );
+
+    removeLoadingInfo("skybox");
   }
 
   /**
