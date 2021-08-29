@@ -26,9 +26,9 @@ const setLoadingInfo = (key, text) => {
  * @param key short name to reference a text box
  */
 const removeLoadingInfo = (key) => {
-  const textBox = loadingState[key];
-  if (textBox !== undefined) {
+  if (loadingState.hasOwnProperty(key)) {
     loadingBox.removeChild(loadingState[key]);
+    delete loadingState[key]; 
   }
 };
 
