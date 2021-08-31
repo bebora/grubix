@@ -2,6 +2,7 @@ import { fetchFile, mathUtils, shaderUtils } from "../utils.js";
 import "../lib/webgl-obj-loader.min.js";
 import { getTexturesWithTarget } from "../utils.js";
 import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
+import { SKYBOX_OFFSET } from "../constants/offsets.js";
 
 /**
  * Manage the rendering of a static skybox
@@ -79,7 +80,7 @@ export class SkyBox {
     // Load the texture
     let texture = this.gl.createTexture();
     this.texture = texture;
-    this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+    this.gl.activeTexture(this.gl.TEXTURE0 + SKYBOX_OFFSET);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
     let targetsWithTexture = getTexturesWithTarget(this.gl, this.cubemapDir);
@@ -111,7 +112,7 @@ export class SkyBox {
       setLoadingInfo("skybox", `Loading skybox textures ${index + 1}/6`);
       await image.decode();
       // Now that the image has loaded upload it to the texture.
-      this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+      this.gl.activeTexture(this.gl.TEXTURE0 + SKYBOX_OFFSET);
       this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
       this.gl.texImage2D(
         target,
@@ -140,9 +141,9 @@ export class SkyBox {
   renderSkyBox(perspectiveMatrix, cameraState) {
     this.gl.useProgram(this.program);
 
-    this.gl.activeTexture(this.gl.TEXTURE0 + 3);
+    this.gl.activeTexture(this.gl.TEXTURE0 + SKYBOX_OFFSET);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
-    this.gl.uniform1i(this.skyboxTexHandle, 3);
+    this.gl.uniform1i(this.skyboxTexHandle, SKYBOX_OFFSET);
 
     // Do not use the translation to create the view matrix since the camera should be at the center
     let viewMatrixNoTranslation = cameraState.viewMatrixCenter;

@@ -1,5 +1,10 @@
 import { mathUtils } from "../utils.js";
 import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
+import {
+  DEPTH_MAP_OFFSET,
+  NORMAL_MAP_OFFSET,
+  TEXTURE_OFFSET,
+} from "../constants/offsets.js";
 
 /**
  * Manage the rendering of the Rubik cube :cube:
@@ -37,7 +42,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     );
     this.textLocation = gl.getUniformLocation(program, "u_texture");
     this.normalMapLocation = gl.getUniformLocation(program, "u_normalMap");
-    this.depthMapLocation = gl.getUniformLocation(program, "u_depthMap")
+    this.depthMapLocation = gl.getUniformLocation(program, "u_depthMap");
 
     for (let i = 0; i < 26; i++) {
       let vao = gl.createVertexArray();
@@ -145,7 +150,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     const texture = gl.createTexture();
     // Load the texture
     await image.decode();
-    gl.activeTexture(gl.TEXTURE0);
+    gl.activeTexture(gl.TEXTURE0 + TEXTURE_OFFSET);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -160,7 +165,7 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     const normalTexture = gl.createTexture();
     // Load the normal texture
     await normalImage.decode();
-    gl.activeTexture(gl.TEXTURE0 + 1);
+    gl.activeTexture(gl.TEXTURE0 + NORMAL_MAP_OFFSET);
     gl.bindTexture(gl.TEXTURE_2D, normalTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(
@@ -177,11 +182,10 @@ export function CubeRenderer(cube, gl, program, textureDir) {
 
     removeLoadingInfo("normalmap");
 
-    const depthOffset = 5;
     const depthTexture = gl.createTexture();
     // Load the depth texture
     await depthImage.decode();
-    gl.activeTexture(gl.TEXTURE0 + depthOffset);
+    gl.activeTexture(gl.TEXTURE0 + DEPTH_MAP_OFFSET);
     gl.bindTexture(gl.TEXTURE_2D, depthTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(
@@ -206,9 +210,9 @@ export function CubeRenderer(cube, gl, program, textureDir) {
    * @param {{perspectiveMatrix: number[], viewMatrix: number[], transposeViewMatrix: number[]}} matrices
    */
   this.renderCube = function (matrices) {
-    gl.uniform1i(this.textLocation, 0);
-    gl.uniform1i(this.normalMapLocation, 1);
-    gl.uniform1i(this.depthMapLocation, 5);
+    gl.uniform1i(this.textLocation, TEXTURE_OFFSET);
+    gl.uniform1i(this.normalMapLocation, NORMAL_MAP_OFFSET);
+    gl.uniform1i(this.depthMapLocation, DEPTH_MAP_OFFSET);
     gl.uniformMatrix4fv(
       this.transposeViewMatrixLocation,
       false,

@@ -1,6 +1,7 @@
 import { getTexturesWithTarget, mathUtils } from "../utils.js";
 import { fromTypeToId } from "../state/ambient.js";
 import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
+import { IRRADIANCE_OFFSET } from "../constants/offsets.js";
 
 /**
  * Manage the rendering of the ambientState, by injecting the uniform values related to the ambient options
@@ -49,7 +50,7 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
     // Load the texture
     let texture = gl.createTexture();
     this.texture = texture;
-    gl.activeTexture(gl.TEXTURE0 + 4);
+    gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
     let targetsWithTexture = getTexturesWithTarget(gl, irradianceDir);
@@ -84,7 +85,7 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
       );
       await image.decode();
       // Now that the image has loaded upload it to the texture.
-      gl.activeTexture(gl.TEXTURE0 + 4);
+      gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
       gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     }
@@ -106,9 +107,9 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
    * @param lightDirMatrix
    */
   this.injectUniform = function (viewMatrix, lightDirMatrix) {
-    gl.activeTexture(gl.TEXTURE0 + 4);
+    gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.texture);
-    gl.uniform1i(uniforms.irradianceTex, 4);
+    gl.uniform1i(uniforms.irradianceTex, IRRADIANCE_OFFSET);
 
     // Inject type uniform
     gl.uniform1i(uniforms.type, fromTypeToId[ambientState.type]);
