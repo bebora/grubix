@@ -52,6 +52,11 @@ struct SpecularInfo {
   float shininess;
 };
 
+struct ParallaxInfo {
+  int enabled;
+  float scale;
+};
+
 uniform DirectLight directLights[10];
 uniform PointLight pointLights[10];
 uniform SpotLight spotLights[10];
@@ -60,6 +65,7 @@ uniform vec3 ambientColor;
 uniform HemisphericAmbient hemispheric;
 uniform DiffuseInfo diffuse;
 uniform SpecularInfo specular;
+uniform ParallaxInfo parallax;
 uniform mat4 transposeViewMatrix;
 
 in vec2 fs_textureCoord;
@@ -208,7 +214,7 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
   // Depth of current layer
   float currentLayerDepth = 0.0;
   // The amount to shift the texture coordinates per layer (from vector P)
-  vec2 P = viewDir.xy / viewDir.z * 0.03; //TODO replace constant multiplier with a uniform
+  vec2 P = viewDir.xy / viewDir.z * parallax.scale;
   vec2 deltaTexCoords = P / numLayers;
 
   // Get initial values
@@ -238,7 +244,10 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
   return finalTexCoords;
 }
 
+/* Prevent coordinates from going over the borders of the texture, so that
+  vertices on the borders do not use colours from neighbouring faces in the texture */
 vec2 adjustParallaxCoordinates(vec2 pom_coords, vec2 orig_coords) {
+  // 4 horizontal slots => 1 / 4; 2 vertical slots => 1 / 2
   float pom_x_offset = floor(pom_coords.x / .25);
   float pom_y_offset = floor(pom_coords.y / .5);
   float orig_x_offset = floor(orig_coords.x / .25);
@@ -254,16 +263,27 @@ vec2 adjustParallaxCoordinates(vec2 pom_coords, vec2 orig_coords) {
   return pom_coords;
 }
 
+vec2 computeParallaxedCoordinates(vec3 fragment_position, vec2 original_texture_coordinates) {
+  if (parallax.enabled == 0) {
+    return original_texture_coordinates;
+  }
+  else {
+    vec3 tangentSpaceCameraPosition = transpTBN * vec3(0.0, 0.0, 0.0); // Camera is in the origin
+    vec3 tangentSpaceFragmentPosition = transpTBN * fragment_position;
+
+    vec3 tangentSpaceViewDir = normalize(tangentSpaceCameraPosition - tangentSpaceFragmentPosition);
+    vec2 texCoords = original_texture_coordinates;
+    texCoords = ParallaxMapping(texCoords, tangentSpaceViewDir);
+    texCoords = adjustParallaxCoordinates(texCoords, original_texture_coordinates);
+
+    return texCoords;
+  }
+}
+
 
 
 void main() {
-  vec3 tangentSpaceCameraPosition = transpTBN * vec3(0.0, 0.0, 0.0); // Camera is in the origin
-  vec3 tangentSpaceFragmentPosition = transpTBN * fs_position;
-
-  vec3 tangentSpaceViewDir = normalize(tangentSpaceCameraPosition - tangentSpaceFragmentPosition);
-  vec2 texCoords = fs_textureCoord;
-  texCoords = ParallaxMapping(texCoords, tangentSpaceViewDir);
-  texCoords = adjustParallaxCoordinates(texCoords, fs_textureCoord);
+  vec2 texCoords = computeParallaxedCoordinates(fs_position, fs_textureCoord);
 
   vec3 normalFromMap = vec3(texture(u_normalMap, texCoords));
   vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;

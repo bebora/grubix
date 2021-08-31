@@ -22,6 +22,9 @@ import { ToggleSideBar } from "./ui/sidebar/toggle.js";
 import { CubeSideBar } from "./ui/sidebar/cube.js";
 import { CubeRenderer } from "./render/cube.js";
 import { removeLoadingOverlay } from "./ui/loading.js";
+import { ParallaxState } from "./state/parallax.js";
+import { ParallaxSideBar } from "./ui/sidebar/parallax.js";
+import { ParallaxRenderer } from "./render/parallax.js";
 
 // Check and retrieve webgl rendering context
 const canvas = document.getElementById("canvas");
@@ -51,6 +54,7 @@ const lightState = new LightState();
 const ambientState = new AmbientState();
 const diffuseState = new DiffuseState();
 const specularState = new SpecularState();
+const parallaxState = new ParallaxState();
 
 const matrices = {
   perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -65,6 +69,7 @@ new LightSideBar(lightState);
 new AmbientSideBar(ambientState);
 new DiffuseSideBar(diffuseState);
 new SpecularSideBar(specularState);
+new ParallaxSideBar(parallaxState);
 new ToggleSideBar(canvasState);
 new CubeSideBar(cube);
 
@@ -82,17 +87,18 @@ const program = shaderUtils.createAndCompileShaders(gl, [
 gl.useProgram(program);
 
 // Load cube-related renderers
-let lightRenderer = new LightRenderer(lightState, gl, program);
-let ambientRenderer = new AmbientRenderer(
+const lightRenderer = new LightRenderer(lightState, gl, program);
+const ambientRenderer = new AmbientRenderer(
   ambientState,
   gl,
   program,
   irradianceDir
 );
-let diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
-let specularRenderer = new SpecularRenderer(specularState, gl, program);
+const diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
+const specularRenderer = new SpecularRenderer(specularState, gl, program);
+const parallaxRenderer = new ParallaxRenderer(parallaxState, gl, program);
 await ambientRenderer.loadTexture(gl);
-let cubeRenderer = new CubeRenderer(cube, gl, program, textureDir);
+const cubeRenderer = new CubeRenderer(cube, gl, program, textureDir);
 await cubeRenderer.loadTexture();
 
 // Clear viewport
@@ -121,6 +127,7 @@ function drawFrame() {
   ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
   diffuseRenderer.injectUniform();
   specularRenderer.injectUniform();
+  parallaxRenderer.injectUniform();
 
   // Draw the cubes
   cubeRenderer.renderCube(matrices);
