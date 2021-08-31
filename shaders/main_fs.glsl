@@ -65,11 +65,13 @@ uniform mat4 transposeViewMatrix;
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
 in vec3 fs_bitangent;
-in vec3 fs_position;
+in vec3 fs_position; // TODO use it when necessary. Useless at the moment.
 in mat3 TBN;
+in mat3 transpTBN;
 
 uniform sampler2D u_texture;
 uniform sampler2D u_normalMap;
+uniform sampler2D u_depthMap;
 
 uniform samplerCube u_irradianceMap;
 
@@ -196,42 +198,40 @@ vec3 computeAmbientContribute(vec3 normal) {
   return ambientContribute;
 }
 
-vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
-{
-  // number of depth layers
-  const float minLayers = 8.0;
-  const float maxLayers = 32.0;
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
+  // Number of depth layers
+  const float minLayers = 16.0;
+  const float maxLayers = 64.0;
   float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));
-  // calculate the size of each layer
+  // Calculate the size of each layer
   float layerDepth = 1.0 / numLayers;
-  // depth of current layer
+  // Depth of current layer
   float currentLayerDepth = 0.0;
-  // the amount to shift the texture coordinates per layer (from vector P)
-  vec2 P = viewDir.xy / viewDir.z * 0.01; //0.1 heightScale
+  // The amount to shift the texture coordinates per layer (from vector P)
+  vec2 P = viewDir.xy / viewDir.z * 0.03; //TODO replace constant multiplier with a uniform
   vec2 deltaTexCoords = P / numLayers;
 
-  // get initial values
-  vec2  currentTexCoords     = texCoords;
+  // Get initial values
+  vec2  currentTexCoords = texCoords;
   float currentDepthMapValue = 1.0 - texture(u_depthMap, currentTexCoords).r;
 
-  while(currentLayerDepth < currentDepthMapValue)
-  {
-    // shift texture coordinates along direction of P
+  for (int step = 0; step < 64 && currentLayerDepth < currentDepthMapValue; step++) {
+    // Shift texture coordinates along direction of P
     currentTexCoords -= deltaTexCoords;
-    // get depthmap value at current texture coordinates
+    // Get depthmap value at current texture coordinates
     currentDepthMapValue = 1.0 - texture(u_depthMap, currentTexCoords).r;
-    // get depth of next layer
+    // Get depth of next layer
     currentLayerDepth += layerDepth;
   }
 
-  // get texture coordinates before collision (reverse operations)
+  // Get texture coordinates before collision (reverse operations)
   vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
 
-  // get depth after and before collision for linear interpolation
+  // Get depth after and before collision for linear interpolation
   float afterDepth  = currentDepthMapValue - currentLayerDepth;
   float beforeDepth = 1.0 - texture(u_depthMap, prevTexCoords).r - currentLayerDepth + layerDepth;
 
-  // interpolation of texture coordinates
+  // Interpolation of texture coordinates
   float weight = afterDepth / (afterDepth - beforeDepth);
   vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
@@ -241,12 +241,12 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
 
 
 void main() {
-  vec3 tangentViewPos  = transpTBN * vec3(.0,.0,.0);
-  vec3 tangentFragPos  = transpTBN * fs_position;
+  vec3 tangentSpaceCameraPosition = transpTBN * vec3(0.0, 0.0, 0.0); // Camera is in the origin
+  vec3 tangentSpaceFragmentPosition = transpTBN * fs_position;
 
-  vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
+  vec3 tangentSpaceViewDir = normalize(tangentSpaceCameraPosition - tangentSpaceFragmentPosition);
   vec2 texCoords = fs_textureCoord;
-  texCoords = ParallaxMapping(texCoords, viewDir);
+  texCoords = ParallaxMapping(texCoords, tangentSpaceViewDir);
 
   vec3 normalFromMap = vec3(texture(u_normalMap, texCoords));
   vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;
