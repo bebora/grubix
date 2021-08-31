@@ -238,6 +238,22 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
   return finalTexCoords;
 }
 
+vec2 adjustParallaxCoordinates(vec2 pom_coords, vec2 orig_coords) {
+  float pom_x_offset = floor(pom_coords.x / .25);
+  float pom_y_offset = floor(pom_coords.y / .5);
+  float orig_x_offset = floor(orig_coords.x / .25);
+  float orig_y_offset = floor(orig_coords.y / .5);
+
+  if (pom_x_offset != orig_x_offset) {
+    pom_coords.x = orig_coords.x;
+  }
+  if (pom_y_offset != orig_y_offset) {
+    pom_coords.y = orig_coords.y;
+  }
+
+  return pom_coords;
+}
+
 
 
 void main() {
@@ -247,6 +263,7 @@ void main() {
   vec3 tangentSpaceViewDir = normalize(tangentSpaceCameraPosition - tangentSpaceFragmentPosition);
   vec2 texCoords = fs_textureCoord;
   texCoords = ParallaxMapping(texCoords, tangentSpaceViewDir);
+  texCoords = adjustParallaxCoordinates(texCoords, fs_textureCoord);
 
   vec3 normalFromMap = vec3(texture(u_normalMap, texCoords));
   vec3 adjustedNormal = normalFromMap * 2.0 - 1.0;
