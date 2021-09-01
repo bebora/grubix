@@ -45,7 +45,7 @@ async function initializePieces(meshDir) {
 
   // Every .obj file will have its information stored in a Piece object
   for (let id = 0; id < 26; id++) {
-    setLoadingInfo("cubemesh", `Loading cube meshes ${id+1}/26`);
+    setLoadingInfo("cubemesh", `Loading cube meshes ${id + 1}/26`);
     let meshObjStr = await promises[id];
     let meshObj = new OBJ.Mesh(meshObjStr);
     meshObj.calculateTangentsAndBitangents();
@@ -292,6 +292,7 @@ class CubeState {
     this.facelets = [];
     this.cube = new Cube();
     this.solvedInitialized = false;
+    this.isScrambled = false;
 
     this.transitionInProgress = false;
   }
@@ -371,6 +372,13 @@ class CubeState {
     }
 
     face.tempAngle = 0;
+
+    if (this.isSolved() && this.isScrambled) {
+      this.isScrambled = false;
+      if (this.confettiEmitter !== undefined) {
+        this.confettiEmitter.spawnConfetti();
+      }
+    }
   }
 
   /**
@@ -534,6 +542,7 @@ class CubeState {
   }
 
   async scramble() {
+    this.isScrambled = true;
     // Random between 20 and 25
     let numMoves = Math.floor(Math.random() * 5) + 20;
     let scrambleMoves = generateScramble(numMoves);
@@ -542,6 +551,7 @@ class CubeState {
   }
 
   async solve() {
+    this.isScrambled = false;
     if (!this.solvedInitialized) {
       Cube.initSolver();
       this.solvedInitialized = true;
@@ -552,6 +562,7 @@ class CubeState {
   }
 
   reset() {
+    this.isScrambled = false;
     for (let i = 0; i < this.pieceArray.length; i++) {
       this.pieceArray[i].worldMatrix = mathUtils.identityMatrix();
     }
@@ -559,6 +570,14 @@ class CubeState {
       this.slotArray[i].piece = this.pieceArray[i];
     }
     this.cube.identity();
+  }
+
+  /**
+   * Attach a confetti emitter to be triggered when the cube is solved
+   * @param {ConfettiEmitter} emitter
+   */
+  setConfettiEmitter(emitter) {
+    this.confettiEmitter = emitter;
   }
 }
 
