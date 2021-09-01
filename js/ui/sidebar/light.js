@@ -108,9 +108,9 @@ export function LightOptions(elements, lightState) {
     el[0].addEventListener("input", (e) => {
       el[1][el[2]] = parseInt(e.target.value);
       lightState.updateLight(
-          that.general.id,
-          that.general.type,
-          that.toOption()
+        that.general.id,
+        that.general.type,
+        that.toOption()
       );
     });
   });

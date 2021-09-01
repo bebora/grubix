@@ -7,6 +7,13 @@
  */
 import { mathUtils } from "../utils.js";
 
+/**
+ * Manage the rendering of the lights
+ * @param {LightState} lightState
+ * @param {WebGL2RenderingContext} gl
+ * @param {WebGLProgram} program
+ * @constructor
+ */
 export function LightRenderer(lightState, gl, program) {
   this.initUniforms = function () {
     // Get uniforms for point lights

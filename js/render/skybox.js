@@ -79,7 +79,7 @@ export class SkyBox {
   async loadTexture() {
     // Load the texture
     let texture = this.gl.createTexture();
-    this.texture = texture;
+    this.skyBoxTexture = texture;
     this.gl.activeTexture(this.gl.TEXTURE0 + SKYBOX_OFFSET);
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
 
@@ -87,7 +87,6 @@ export class SkyBox {
     let targetsWithImages = targetsWithTexture.map((el) => {
       let image = new Image();
       image.src = el.url;
-      image.decode();
       return {
         target: el.target,
         image,
@@ -95,19 +94,6 @@ export class SkyBox {
     });
     for (const [index, textureWithTarget] of targetsWithImages.entries()) {
       const { target, image } = textureWithTarget;
-
-      // render in the texture, before it's loaded
-      this.gl.texImage2D(
-        target,
-        0,
-        this.gl.RGBA,
-        256,
-        256,
-        0,
-        this.gl.RGBA,
-        this.gl.UNSIGNED_BYTE,
-        null
-      );
 
       setLoadingInfo("skybox", `Loading skybox textures ${index + 1}/6`);
       await image.decode();
@@ -118,6 +104,9 @@ export class SkyBox {
         target,
         0,
         this.gl.RGBA,
+        2048,
+        2048,
+        0,
         this.gl.RGBA,
         this.gl.UNSIGNED_BYTE,
         image
@@ -142,7 +131,7 @@ export class SkyBox {
     this.gl.useProgram(this.program);
 
     this.gl.activeTexture(this.gl.TEXTURE0 + SKYBOX_OFFSET);
-    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
+    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.skyBoxTexture);
     this.gl.uniform1i(this.skyboxTexHandle, SKYBOX_OFFSET);
 
     // Do not use the translation to create the view matrix since the camera should be at the center

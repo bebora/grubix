@@ -108,7 +108,7 @@ const ambientRenderer = new AmbientRenderer(
   ambientState,
   gl,
   program,
-  irradianceDir
+  irradianceDir,
 );
 const diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
 const specularRenderer = new SpecularRenderer(specularState, gl, program);
@@ -141,7 +141,11 @@ function drawFrame() {
 
   // Inject uniforms
   lightRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
-  ambientRenderer.injectUniform(matrices.viewMatrix, lightDirMatrix);
+  ambientRenderer.injectUniform(
+    matrices.viewMatrix,
+    lightDirMatrix,
+    skyBox.skyBoxTexture
+  );
   diffuseRenderer.injectUniform();
   specularRenderer.injectUniform();
   parallaxRenderer.injectUniform();

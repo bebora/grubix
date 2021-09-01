@@ -1,7 +1,7 @@
 import { getTexturesWithTarget, mathUtils } from "../utils.js";
 import { fromTypeToId } from "../state/ambient.js";
 import { removeLoadingInfo, setLoadingInfo } from "../ui/loading.js";
-import { IRRADIANCE_OFFSET } from "../constants/offsets.js";
+import { IRRADIANCE_OFFSET, SKYBOX_OFFSET } from "../constants/offsets.js";
 
 /**
  * Manage the rendering of the ambientState, by injecting the uniform values related to the ambient options
@@ -11,7 +11,12 @@ import { IRRADIANCE_OFFSET } from "../constants/offsets.js";
  * @param {string} irradianceDir
  * @constructor
  */
-export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
+export function AmbientRenderer(
+  ambientState,
+  gl,
+  program,
+  irradianceDir,
+) {
   this.initUniforms = function () {
     let type = gl.getUniformLocation(program, "ambientType");
 
@@ -38,20 +43,22 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
     };
 
     let irradianceTex = gl.getUniformLocation(program, "u_irradianceMap");
+    let environmentTex = gl.getUniformLocation(program, "u_environmentMap");
 
     return {
       type,
       ambient,
       hemispheric,
       irradianceTex,
+      environmentTex,
     };
   };
   this.loadTexture = async function (gl) {
-    // Load the texture
-    let texture = gl.createTexture();
-    this.texture = texture;
+    // Load the irradiance texture
+    let irradianceTexture = gl.createTexture();
+    this.irradianceTexture = irradianceTexture;
     gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, irradianceTexture);
 
     let targetsWithTexture = getTexturesWithTarget(gl, irradianceDir);
     let targetsWithImages = targetsWithTexture.map((el) => {
@@ -66,19 +73,6 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
     for (const [index, textureWithTarget] of targetsWithImages.entries()) {
       const { target, image } = textureWithTarget;
 
-      // render in the texture, before it's loaded
-      gl.texImage2D(
-        target,
-        0,
-        gl.RGBA,
-        256,
-        256,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        null
-      );
-
       setLoadingInfo(
         "irradiance",
         `Loading irradiance textures ${index + 1}/6`
@@ -86,7 +80,7 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
       await image.decode();
       // Now that the image has loaded upload it to the texture.
       gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
-      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, irradianceTexture);
       gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     }
     gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
@@ -105,11 +99,16 @@ export function AmbientRenderer(ambientState, gl, program, irradianceDir) {
    * Pass view matrix to transform light position and direction in camera space from world space
    * @param viewMatrix
    * @param lightDirMatrix
+   * @param {WebGLTexture} skyBoxTexture
    */
-  this.injectUniform = function (viewMatrix, lightDirMatrix) {
+  this.injectUniform = function (viewMatrix, lightDirMatrix, skyBoxTexture) {
     gl.activeTexture(gl.TEXTURE0 + IRRADIANCE_OFFSET);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.texture);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.irradianceTexture);
     gl.uniform1i(uniforms.irradianceTex, IRRADIANCE_OFFSET);
+
+    gl.activeTexture(gl.TEXTURE0 + SKYBOX_OFFSET);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyBoxTexture);
+    gl.uniform1i(uniforms.environmentTex, SKYBOX_OFFSET);
 
     // Inject type uniform
     gl.uniform1i(uniforms.type, fromTypeToId[ambientState.type]);

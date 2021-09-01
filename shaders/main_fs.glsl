@@ -78,7 +78,7 @@ uniform mat4 transposeViewMatrix;
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
 in vec3 fs_bitangent;
-in vec3 fs_position; // TODO use it when necessary. Useless at the moment.
+in vec3 fs_position;
 in mat3 TBN;
 in mat3 transpTBN;
 
@@ -87,6 +87,8 @@ uniform sampler2D u_normalMap;
 uniform sampler2D u_depthMap;
 
 uniform samplerCube u_irradianceMap;
+uniform samplerCube u_environmentMap;
+
 
 const float PI = 3.14159265359;
 
@@ -278,17 +280,28 @@ vec3 computeAmbientContribute(vec3 normal, vec3 compoundDiffuseColour) {
     );
   }
   else {
-    // Skybox with irradiance
+    // Skybox - ambient contribute is irradiance (diffuse) + specular (from env map mipmap)
     vec3 normalWorldSpace = normalize(mat3(transposeViewMatrix) * normal);
-    ambientContribute = texture(u_irradianceMap, normalWorldSpace).rgb;
+    vec3 eyeDirection = normalize(-fs_position);
+    vec3 ambientDiffuse = texture(u_irradianceMap, normalWorldSpace).rgb; // irradiance
+
+    // Compute specualar contribute
+    vec3 cameraSpaceReflectDirection = -reflect(eyeDirection, normal);
+    vec3 worldSpaceReflectDirection = normalize(mat3(transposeViewMatrix) * cameraSpaceReflectDirection);
+    float mipCount = 11.0; // resolution of 2048*2048
+    // if PBR is disabled, we get the maximum level of detail (lod = 0), otherwise roughness
+    float levelOfDetail = pbr.enabled == 1 ? (pbr.roughness * mipCount) : 0.0;
+    vec3 ambientSpecular = textureLod(u_environmentMap, worldSpaceReflectDirection, levelOfDetail).rgb;
+
     if(pbr.enabled == 1){
-      vec3 eyeDirection = normalize(-fs_position);
       vec3 F0 = vec3(0.04); 
       F0 = mix(F0, compoundDiffuseColour, pbr.metallic);
       vec3 kS = fresnelSchlickRoughness(max(dot(normal, eyeDirection), 0.0), F0, pbr.roughness); 
       vec3 kD = 1.0 - kS;
-      ambientContribute *= kD;
+      ambientDiffuse *= kD;
     }
+
+    ambientContribute = ambientDiffuse + ambientSpecular;
   }
   return compoundDiffuseColour * ambientContribute;
 }
