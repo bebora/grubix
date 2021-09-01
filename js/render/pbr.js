@@ -6,22 +6,22 @@
  * @constructor
  */
 export function PbrRenderer(pbrState, gl, program) {
-    this.initUniforms = function () {
-        const pbrPrefix = "pbr";
-        return {
-            enabled: gl.getUniformLocation(program, `${pbrPrefix}.enabled`),
-            metallic: gl.getUniformLocation(program, `${pbrPrefix}.metallic`),
-            roughness: gl.getUniformLocation(program, `${pbrPrefix}.roughness`),
-        };
+  this.initUniforms = function () {
+    const pbrPrefix = "pbr";
+    return {
+      enabled: gl.getUniformLocation(program, `${pbrPrefix}.enabled`),
+      metallic: gl.getUniformLocation(program, `${pbrPrefix}.metallic`),
+      roughness: gl.getUniformLocation(program, `${pbrPrefix}.roughness`),
     };
+  };
 
-    const uniforms = this.initUniforms();
+  const uniforms = this.initUniforms();
 
-    this.injectUniform = function () {
-        let parameters = pbrState.getParameters();
+  this.injectUniform = function () {
+    let parameters = pbrState.getParameters();
 
-        gl.uniform1i(uniforms.enabled, parameters.enabled ? 1 : 0);
-        gl.uniform1f(uniforms.metallic, parameters.metallic);
-        gl.uniform1f(uniforms.roughness, parameters.roughness);
-    };
+    gl.uniform1i(uniforms.enabled, parameters.enabled ? 1 : 0);
+    gl.uniform1f(uniforms.metallic, parameters.metallic);
+    gl.uniform1f(uniforms.roughness, parameters.roughness);
+  };
 }

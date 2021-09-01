@@ -28,7 +28,7 @@ const setLoadingInfo = (key, text) => {
 const removeLoadingInfo = (key) => {
   if (loadingState.hasOwnProperty(key)) {
     loadingBox.removeChild(loadingState[key]);
-    delete loadingState[key]; 
+    delete loadingState[key];
   }
 };
 
