@@ -279,7 +279,7 @@ vec3 computeAmbientContribute(vec3 normal, vec3 compoundDiffuseColour) {
   }
   else {
     // Skybox with irradiance
-    vec3 normalWorldSpace = vec3(normalize(transposeViewMatrix * vec4(normal,1)));
+    vec3 normalWorldSpace = normalize(mat3(transposeViewMatrix) * normal);
     ambientContribute = texture(u_irradianceMap, normalWorldSpace).rgb;
     if(pbr.enabled == 1){
       vec3 eyeDirection = normalize(-fs_position);
