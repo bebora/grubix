@@ -107,6 +107,11 @@ export function LightOptions(elements, lightState) {
   elementsToInt.map(function (el) {
     el[0].addEventListener("input", (e) => {
       el[1][el[2]] = parseInt(e.target.value);
+      lightState.updateLight(
+          that.general.id,
+          that.general.type,
+          that.toOption()
+      );
     });
   });
   let elementsToFloat = [
