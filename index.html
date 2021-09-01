@@ -1,177 +1,190 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Grubix - Cube visualizer</title>
   <link href="css/index.css" rel="stylesheet">
-  <link rel="shortcut icon" type="image/svg+xml" href="assets/favicon.svg"/>
+  <link rel="shortcut icon" type="image/svg+xml" href="assets/favicon.svg" />
 </head>
+
 <body>
-<div class="container">
-  <div class="sidebar-right" id="sidebar">
-    <button type="button" id="toggle-sidebar">Toggle sidebar</button>
-    <div class="option-container" id="light">
-      <label for="light-id">Light ID</label>
-      <select id="light-id">
-      </select>
-      <button id="add-light">+</button>
-      <button id="remove-light">-</button>
-      <select id="light-type">
-        <option value="direct" selected>Direct</option>
-        <option value="point">Point</option>
-        <option value="spot">Spot</option>
-      </select>
-      <br>
-      <div id="light-direct">
-        <label for="light-direct-azimuth">Azimuth direction</label>
-        <input type="range" min="-180" max="180" value="0" id="light-direct-azimuth">
-        <br>
-        <label for="light-direct-elevation">Elevation direction</label>
-        <input type="range" min="0" max="180" value="90" id="light-direct-elevation">
-        <br>
-        <label for="light-direct-color">Color</label>
-        <input type="color" id="light-direct-color" name="light-direct-color" value="#c0ffee">
-      </div>
-      <div id="light-point" class="hidden">
-        <label for="light-point-x">Position x</label>
-        <input type="range" min="-60" max="60" value="0" id="light-point-x">
-        <br>
-        <label for="light-point-y">Position y</label>
-        <input type="range" min="-60" max="60" value="0" id="light-point-y">
-        <br>
-        <label for="light-point-z">Position z</label>
-        <input type="range" min="-60" max="60" value="30" id="light-point-z">
-        <br>
-        <label for="light-point-color">Color</label>
-        <input type="color" id="light-point-color" name="light-point-color" value="#c0ffee">
-        <br>
-        <label for="light-point-decay">Decay</label>
-        <select id="light-point-decay">
-          <option value="0" selected>0</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
+  <div class="container">
+    <div class="sidebar-right" id="sidebar">
+      <button type="button" id="toggle-sidebar">Toggle sidebar</button>
+      <div class="option-container" id="light">
+        <label for="light-id">Light ID</label>
+        <select id="light-id">
+        </select>
+        <button id="add-light">+</button>
+        <button id="remove-light">-</button>
+        <select id="light-type">
+          <option value="direct" selected>Direct</option>
+          <option value="point">Point</option>
+          <option value="spot">Spot</option>
         </select>
         <br>
-        <label for="light-point-target">Target Distance</label>
+        <div id="light-direct">
+          <label for="light-direct-azimuth">Azimuth direction</label>
+          <input type="range" min="-180" max="180" value="0" id="light-direct-azimuth">
+          <br>
+          <label for="light-direct-elevation">Elevation direction</label>
+          <input type="range" min="0" max="180" value="90" id="light-direct-elevation">
+          <br>
+          <label for="light-direct-color">Color</label>
+          <input type="color" id="light-direct-color" name="light-direct-color" value="#c0ffee">
+        </div>
+        <div id="light-point" class="hidden">
+          <label for="light-point-x">Position x</label>
+          <input type="range" min="-60" max="60" value="0" id="light-point-x">
+          <br>
+          <label for="light-point-y">Position y</label>
+          <input type="range" min="-60" max="60" value="0" id="light-point-y">
+          <br>
+          <label for="light-point-z">Position z</label>
+          <input type="range" min="-60" max="60" value="30" id="light-point-z">
+          <br>
+          <label for="light-point-color">Color</label>
+          <input type="color" id="light-point-color" name="light-point-color" value="#c0ffee">
+          <br>
+          <label for="light-point-decay">Decay</label>
+          <select id="light-point-decay">
+            <option value="0" selected>0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+          <br>
+          <label for="light-point-target">Target Distance</label>
           <input type="range" min="10" max="200" value="0" id="light-point-target">
-        <br>
+          <br>
+        </div>
+        <div id="light-spot" class="hidden">
+          <label for="light-spot-x">Position x</label>
+          <input type="range" min="-60" max="60" value="0" id="light-spot-x">
+          <br>
+          <label for="light-spot-y">Position y</label>
+          <input type="range" min="-60" max="60" value="0" id="light-spot-y">
+          <br>
+          <label for="light-spot-z">Position z</label>
+          <input type="range" min="-60" max="60" value="30" id="light-spot-z">
+          <br>
+          <label for="light-direct-azimuth">Azimuth direction</label>
+          <input type="range" min="-180" max="180" value="0" id="light-spot-azimuth">
+          <br>
+          <label for="light-direct-elevation">Elevation direction</label>
+          <input type="range" min="0" max="180" value="90" id="light-spot-elevation">
+          <br>
+          <label for="light-spot-color">Color</label>
+          <input type="color" id="light-spot-color" name="light-spot-color" value="#c0ffee">
+          <label for="light-spot-decay">Decay</label>
+          <select id="light-spot-decay">
+            <option value="0" selected>0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+          <br>
+          <label for="light-spot-target">Target Distance</label>
+          <input type="range" min="1" max="200" value="1" id="light-spot-target">
+          <br>
+          <label for="light-spot-cone-out">Cone out</label>
+          <input type="range" min="0" max="180" value="100" id="light-spot-cone-out">
+          <br>
+          <label for="light-spot-cone-in">Cone in</label>
+          <input type="range" min="0" max="100" value="50" id="light-spot-cone-in">
+          <br>
+        </div>
       </div>
-      <div id="light-spot" class="hidden">
-        <label for="light-spot-x">Position x</label>
-        <input type="range" min="-60" max="60" value="0" id="light-spot-x">
-        <br>
-        <label for="light-spot-y">Position y</label>
-        <input type="range" min="-60" max="60" value="0" id="light-spot-y">
-        <br>
-        <label for="light-spot-z">Position z</label>
-        <input type="range" min="-60" max="60" value="30" id="light-spot-z">
-        <br>
-        <label for="light-direct-azimuth">Azimuth direction</label>
-        <input type="range" min="-180" max="180" value="0" id="light-spot-azimuth">
-        <br>
-        <label for="light-direct-elevation">Elevation direction</label>
-        <input type="range" min="0" max="180" value="90" id="light-spot-elevation">
-        <br>
-        <label for="light-spot-color">Color</label>
-        <input type="color" id="light-spot-color" name="light-spot-color" value="#c0ffee">
-        <label for="light-spot-decay">Decay</label>
-        <select id="light-spot-decay">
-          <option value="0" selected>0</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
+      <div class="option-container">
+        <label for="ambient-select">Ambient type</label>
+        <select id="ambient-select">
+          <option value="skybox" selected>Skybox + Irradiance</option>
+          <option value="ambient">Ambient</option>
+          <option value="hemispheric">Hemispheric</option>
+        </select>
+        <div id="ambient" class="hidden">
+          <label for="ambient-color">Main ambient color</label>
+          <input type="color" id="ambient-color" name="ambient-color" value="#c0ffee">
+        </div>
+        <div id="hemispheric" class="hidden">
+          <label for="hemispheric-upper-color">Upper color</label>
+          <input type="color" id="hemispheric-upper-color" name="hemispheric-upper-color" value="#c0ffee">
+          <br>
+          <label for="hemispheric-lower-color">Lower color</label>
+          <input type="color" id="hemispheric-lower-color" name="hemispheric-lower-color" value="#beb02a">
+          <br>
+          <label for="hemispheric-azimuth">Azimuth direction</label>
+          <input type="range" min="-180" max="180" value="0" id="hemispheric-azimuth">
+          <br>
+          <label for="hemispheric-elevation">Elevation direction</label>
+          <input type="range" min="0" max="180" value="90" id="hemispheric-elevation">
+        </div>
+      </div>
+      <div class="option-container">
+        <label for="diffuse-select">Diffuse type</label>
+        <select id="diffuse-select">
+          <option value="lambert" selected>Lambert</option>
+          <option value="toon">Toon</option>
         </select>
         <br>
-        <label for="light-spot-target">Target Distance</label>
-        <input type="range" min="1" max="200" value="1" id="light-spot-target">
+        <label for="diffuse-color">Color</label>
+        <input type="color" id="diffuse-color" name="diffuse-color" value="#beb02a">
         <br>
-        <label for="light-spot-cone-out">Cone out</label>
-        <input type="range" min="0" max="180" value = "100" id="light-spot-cone-out">
+        <label for="diffuse-texture">Texture Intensity</label>
+        <input type="range" min="0" max="100" value="100" id="diffuse-texture">
         <br>
-        <label for="light-spot-cone-in">Cone in</label>
-        <input type="range" min="0" max="100" value = "50" id="light-spot-cone-in">
+        <div id="toon" class="hidden">
+          <label for="diffuse-toon-threshold">Toon Threshold</label>
+          <input type="range" min="0" max="100" value="0" id="diffuse-toon-threshold">
+          <br>
+        </div>
+      </div>
+      <div id="specular" class="option-container">
+        <label for=" specular-select">Specular type</label>
+        <select id="specular-select">
+          <option value="phong" selected>Phong</option>
+          <option value="blinn">Blinn</option>
+        </select>
         <br>
+        <label for="specular-color">Color</label>
+        <input type="color" id="specular-color" name="specular-color" value="#8f00ff">
+        <br>
+        <label for="specular-shininess">Shininess</label>
+        <input type="range" min="1" max="200" value="10" id="specular-shininess">
+      </div>
+      <div class="option-container">
+        <label for="enable-pom">Enable Parallax Occlusion Mapping</label>
+        <input type="checkbox" id="enable-pom" name="enable-pom" checked="checked">
+        <br>
+        <label for="pom-scale">Parallax scale</label>
+        <input type="range" id="pom-scale" name="pom-scale" min="0.001" max="0.03" step="0.0005">
+      </div>
+      <div class="option-container">
+        <label for="enable-pbr">Enable PBR</label>
+        <input type="checkbox" id="enable-pbr" name="enable-pbr" checked="checked">
+        <br>
+        <label for="pbr-metallic">PBR metallic</label>
+        <input type="range" id="pbr-metallic" name="pbr-metallic" min="0.0" max="1.0" step="0.0005">
+        <br>
+        <label for="pbr-roughness">PBR roughness</label>
+        <input type="range" id="pbr-roughness" name="pbr-roughness" min="0.0" max="1.0" step="0.0005">
+      </div>
+      <div class="option-container">
+        <button id="scramble">Scramble!</button>
+        <button id="solve">Solve!</button>
+        <button id="reset">Reset!</button>
       </div>
     </div>
-    <div class="option-container">
-    <label for="ambient-select">Ambient type</label>
-      <select id="ambient-select">
-        <option value="skybox" selected>Skybox + Irradiance</option>
-        <option value="ambient">Ambient</option>
-        <option value="hemispheric">Hemispheric</option>
-      </select>
-      <div id="ambient" class="hidden">
-        <label for="ambient-color">Main ambient color</label>
-        <input type="color" id="ambient-color" name="ambient-color" value="#c0ffee">
+    <div class="left">
+      <div id="loading-spinner-container">
+        <div id="loading-spinner"></div>
       </div>
-      <div id="hemispheric" class="hidden">
-        <label for="hemispheric-upper-color">Upper color</label>
-        <input type="color" id="hemispheric-upper-color" name="hemispheric-upper-color" value="#c0ffee">
-        <br>
-        <label for="hemispheric-lower-color">Lower color</label>
-        <input type="color" id="hemispheric-lower-color" name="hemispheric-lower-color" value="#beb02a">
-        <br>
-        <label for="hemispheric-azimuth">Azimuth direction</label>
-        <input type="range" min="-180" max="180" value="0" id="hemispheric-azimuth">
-        <br>
-        <label for="hemispheric-elevation">Elevation direction</label>
-        <input type="range" min="0" max="180" value="90" id="hemispheric-elevation">
-      </div>
-    </div>
-    <div class="option-container">
-      <label for="diffuse-select">Diffuse type</label>
-      <select id="diffuse-select">
-        <option value="lambert" selected>Lambert</option>
-        <option value="toon">Toon</option>
-      </select>
-      <br>
-      <label for="diffuse-color">Color</label>
-      <input type="color" id="diffuse-color" name="diffuse-color" value="#beb02a">
-      <br>
-      <label for="diffuse-texture">Texture Intensity</label>
-      <input type="range" min="0" max="100" value="100" id="diffuse-texture">
-      <br>
-      <div id="toon" class="hidden">
-        <label for="diffuse-toon-threshold">Toon Threshold</label>
-        <input type="range" min="0" max="100" value="0" id="diffuse-toon-threshold">
-        <br>
-      </div>
-    </div>
-    <div class="option-container">
-      <label for="specular-select">Specular type</label>
-      <select id="specular-select">
-        <option value="phong" selected>Phong</option>
-        <option value="blinn">Blinn</option>
-      </select>
-      <br>
-      <label for="specular-color">Color</label>
-      <input type="color" id="specular-color" name="specular-color" value="#8f00ff">
-      <br>
-      <label for="specular-shininess">Shininess</label>
-      <input type="range" min="1" max="200" value="10" id="specular-shininess">
-    </div>
-    <div class="option-container">
-      <label for="enable-pom">Enable Parallax Occlusion Mapping</label>
-      <input type="checkbox" id="enable-pom" name="enable-pom" checked="checked">
-      <br>
-      <label for="pom-scale">Parallax scale</label>
-      <input type="range" id="pom-scale" name="pom-scale" min="0.001" max="0.03" step="0.0005">
-    </div>
-    <div class="option-container">
-      <button id="scramble">Scramble!</button>
-      <button id="solve">Solve!</button>
-      <button id="reset">Reset!</button>
+      <canvas id="canvas"></canvas>
     </div>
   </div>
-  <div class="left">
-    <div id="loading-spinner-container">
-      <div id="loading-spinner"></div>
-    </div>
-    <canvas id="canvas"></canvas>
-  </div>
-</div>
-<script src="js/lib/cube.js"></script>
-<script src="js/lib/solve.js"></script>
-<script type="module" src="js/index.js"></script>
+  <script src="js/lib/cube.js"></script>
+  <script src="js/lib/solve.js"></script>
+  <script type="module" src="js/index.js"></script>
 </body>
+
 </html>

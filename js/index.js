@@ -25,6 +25,9 @@ import { removeLoadingOverlay } from "./ui/loading.js";
 import { ParallaxState } from "./state/parallax.js";
 import { ParallaxSideBar } from "./ui/sidebar/parallax.js";
 import { ParallaxRenderer } from "./render/parallax.js";
+import { PbrState } from "./state/pbr.js";
+import { PbrSideBar } from "./ui/sidebar/pbr.js";
+import { PbrRenderer } from "./render/pbr.js";
 
 // Check and retrieve webgl rendering context
 const canvas = document.getElementById("canvas");
@@ -55,6 +58,7 @@ const ambientState = new AmbientState();
 const diffuseState = new DiffuseState();
 const specularState = new SpecularState();
 const parallaxState = new ParallaxState();
+const pbrState = new PbrState();
 
 const matrices = {
   perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -70,6 +74,7 @@ new AmbientSideBar(ambientState);
 new DiffuseSideBar(diffuseState);
 new SpecularSideBar(specularState);
 new ParallaxSideBar(parallaxState);
+new PbrSideBar(pbrState);
 new ToggleSideBar(canvasState);
 new CubeSideBar(cube);
 
@@ -97,6 +102,7 @@ const ambientRenderer = new AmbientRenderer(
 const diffuseRenderer = new DiffuseRenderer(diffuseState, gl, program);
 const specularRenderer = new SpecularRenderer(specularState, gl, program);
 const parallaxRenderer = new ParallaxRenderer(parallaxState, gl, program);
+const pbrRenderer = new PbrRenderer(pbrState, gl, program);
 await ambientRenderer.loadTexture(gl);
 const cubeRenderer = new CubeRenderer(cube, gl, program, textureDir);
 await cubeRenderer.loadTexture();
@@ -128,6 +134,7 @@ function drawFrame() {
   diffuseRenderer.injectUniform();
   specularRenderer.injectUniform();
   parallaxRenderer.injectUniform();
+  pbrRenderer.injectUniform();
 
   // Draw the cubes
   cubeRenderer.renderCube(matrices);

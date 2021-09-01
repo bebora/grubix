@@ -57,6 +57,12 @@ struct ParallaxInfo {
   float scale;
 };
 
+struct PbrInfo {
+  int enabled;
+  float metallic;
+  float roughness;
+};
+
 uniform DirectLight directLights[10];
 uniform PointLight pointLights[10];
 uniform SpotLight spotLights[10];
@@ -66,6 +72,7 @@ uniform HemisphericAmbient hemispheric;
 uniform DiffuseInfo diffuse;
 uniform SpecularInfo specular;
 uniform ParallaxInfo parallax;
+uniform PbrInfo pbr;
 uniform mat4 transposeViewMatrix;
 
 in vec2 fs_textureCoord;
@@ -80,6 +87,8 @@ uniform sampler2D u_normalMap;
 uniform sampler2D u_depthMap;
 
 uniform samplerCube u_irradianceMap;
+
+const float PI = 3.14159265359;
 
 out vec4 outColor;
 
@@ -122,32 +131,101 @@ vec3 computeDiffuse(LightInfo lightInfo, vec3 compoundDiffuseColour, vec3 normal
   }
 }
 
-vec3 computeSpecular(LightInfo lightInfo, vec3 normal, vec3 eyeDirection) {
+vec3 fresnelSchlick(float cosTheta, vec3 F0){
+    return F0 + (1.0 - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
+}  
+
+float DistributionGGX(vec3 N, vec3 H, float roughness){
+    float a      = roughness*roughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness){
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness){
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+vec3 computeSpecular(LightInfo lightInfo, vec3 normal, vec3 eyeDirection, vec3 halfVector) {
   vec3 reflection = -reflect(lightInfo.direction, normal);
   float lightDotNormals = clamp(dot(normal, lightInfo.direction), 0.0, 1.0);
 
   // If the dot product between the light and the normal is less than 0, no specular contribute
   vec3 color = lightDotNormals > 0.0 ? lightInfo.color * specular.color : vec3(0,0,0);
 
-  if (specular.type == 0) {
-    // Phong
-    // Compute the dot product between the reflection and the eye direction to get cos(alpha)
-    float reflectionDotEye = clamp(dot(reflection, eyeDirection), 0.0, 1.0);
-    return color * pow(reflectionDotEye, specular.shininess);
-  }
-  else {
-    // Blinn
-    // Compute half vector between light direction and the eye direction
-    vec3 halfVector = normalize(lightInfo.direction + eyeDirection);
-    // Compute the dot product between the normals and the half vector
-    float normalDotHalfVector = clamp(dot(normal, halfVector), 0.0, 1.0);
-    return color * pow(normalDotHalfVector, specular.shininess);
+  if(pbr.enabled == 1){
+    // Cook-Torrance
+    vec3 L = lightInfo.direction;
+    vec3 H = normalize(lightInfo.direction + eyeDirection);
+    vec3 N = normal;
+    
+    // cook-torrance brdf
+    float NDF = DistributionGGX(N, H, pbr.roughness);        
+    float G   = GeometrySmith(N, eyeDirection, L, pbr.roughness);       
+    
+    float numerator    = NDF * G; // we'll multiply by F later, when computing kD and kS
+    float denominator = 4.0 * max(dot(N, eyeDirection), 0.0) * max(dot(N, L), 0.0);
+    vec3 specular     = vec3(numerator / max(denominator, 0.001) * lightDotNormals);
+    return specular;
+  } 
+  else{
+    if (specular.type == 0) {
+      // Phong
+      // Compute the dot product between the reflection and the eye direction to get cos(alpha)
+      float reflectionDotEye = clamp(dot(reflection, eyeDirection), 0.0, 1.0);
+      return color * pow(reflectionDotEye, specular.shininess);
+    }
+    else {
+      // Blinn
+      // Compute the dot product between the normals and the half vector
+      float normalDotHalfVector = clamp(dot(normal, halfVector), 0.0, 1.0);
+      return color * pow(normalDotHalfVector, specular.shininess);
+    }
   }
 }
 
+vec3 computeLightDiffuseSpecular(LightInfo lightInfo, vec3 compoundDiffuseColour, vec3 normal, vec3 eyeDirection){
+  vec3 kS = vec3(1.0);
+  vec3 kD = vec3(1.0);
+  // Compute half vector between light direction and the eye direction
+  vec3 halfVector = normalize(lightInfo.direction + eyeDirection);
+
+  if(pbr.enabled == 1){
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, compoundDiffuseColour, pbr.metallic);
+    vec3 F    = fresnelSchlick(max(dot(halfVector, eyeDirection), 0.0), F0);       
+    kS = F;
+    kD = vec3(1.0) - kS;
+    kD *= 1.0 - pbr.metallic;
+  }
+
+  return  kD * computeDiffuse(lightInfo, compoundDiffuseColour, normal) + 
+          kS * computeSpecular(lightInfo, normal, eyeDirection, halfVector);
+}
+
 vec3 computeDiffuseSpecularContribute(vec3 compoundDiffuseColour, vec3 normal) {
-  vec3 diffuseContribute = vec3(0,0,0);
-  vec3 specularContribute = vec3(0,0,0);
+  vec3 diffuseSpecularContribute = vec3(0,0,0);
 
   // Camera is in 0 since we are in camera space
   vec3 eyeDirection = normalize(-fs_position);
@@ -158,32 +236,35 @@ vec3 computeDiffuseSpecularContribute(vec3 compoundDiffuseColour, vec3 normal) {
       break;
     }
     LightInfo directLight = directLightInfo(directLights[i].direction, directLights[i].color);
-    diffuseContribute += computeDiffuse(directLight, compoundDiffuseColour, normal);
-    specularContribute += computeSpecular(directLight, normal, eyeDirection);
+    diffuseSpecularContribute += computeLightDiffuseSpecular(directLight, compoundDiffuseColour, normal, eyeDirection);    
   }
+
   // Compute contributes from point lights
   for (int i = 0; i < 10; i++) {
     if (pointLights[i].valid == 0) {
       break;
     }
     LightInfo pointLight = pointLightInfo(pointLights[i].position, pointLights[i].decay, pointLights[i].target, pointLights[i].color);
-    diffuseContribute += computeDiffuse(pointLight, compoundDiffuseColour, normal);
-    specularContribute += computeSpecular(pointLight, normal, eyeDirection);
+    diffuseSpecularContribute += computeLightDiffuseSpecular(pointLight, compoundDiffuseColour, normal, eyeDirection);
   }
+
   // Compute contributes from spot lights
   for (int i = 0; i < 10; i++) {
     if (spotLights[i].valid == 0) {
       break;
     }
     LightInfo spotLight = spotLightInfo(spotLights[i].position, spotLights[i].direction, spotLights[i].decay, spotLights[i].target, spotLights[i].color, spotLights[i].coneOut, spotLights[i].coneIn);
-    diffuseContribute += computeDiffuse(spotLight, compoundDiffuseColour, normal);
-    specularContribute += computeSpecular(spotLight, normal, eyeDirection);
+    diffuseSpecularContribute += computeLightDiffuseSpecular(spotLight, compoundDiffuseColour, normal, eyeDirection);
   }
 
-  return diffuseContribute + specularContribute;
+  return diffuseSpecularContribute;
 }
 
-vec3 computeAmbientContribute(vec3 normal) {
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness){
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 computeAmbientContribute(vec3 normal, vec3 compoundDiffuseColour) {
   vec3 ambientContribute;
   if (ambientType == 1) {
     // Ambient regular
@@ -200,8 +281,16 @@ vec3 computeAmbientContribute(vec3 normal) {
     // Skybox with irradiance
     vec3 normalWorldSpace = vec3(normalize(transposeViewMatrix * vec4(normal,1)));
     ambientContribute = texture(u_irradianceMap, normalWorldSpace).rgb;
+    if(pbr.enabled == 1){
+      vec3 eyeDirection = normalize(-fs_position);
+      vec3 F0 = vec3(0.04); 
+      F0 = mix(F0, compoundDiffuseColour, pbr.metallic);
+      vec3 kS = fresnelSchlickRoughness(max(dot(normal, eyeDirection), 0.0), F0, pbr.roughness); 
+      vec3 kD = 1.0 - kS;
+      ambientContribute *= kD;
+    }
   }
-  return ambientContribute;
+  return compoundDiffuseColour * ambientContribute;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -297,7 +386,7 @@ void main() {
 
   vec3 diffuseSpecularContribute = computeDiffuseSpecularContribute(compoundAmbientDiffuseColour, normal);
 
-  vec3 ambientContribute = compoundAmbientDiffuseColour * computeAmbientContribute(normal);
+  vec3 ambientContribute = computeAmbientContribute(normal, compoundAmbientDiffuseColour);
 
   vec3 colour_with_ambient = clamp(ambientContribute + diffuseSpecularContribute, 0.0, 1.0);
   outColor = vec4(colour_with_ambient, 1.0);
