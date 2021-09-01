@@ -371,6 +371,12 @@ class CubeState {
     }
 
     face.tempAngle = 0;
+
+    if (this.isSolved()) {
+      if (this.confettiEmitter !== undefined) {
+        this.confettiEmitter.spawnConfetti();
+      }
+    }
   }
 
   /**
@@ -559,6 +565,14 @@ class CubeState {
       this.slotArray[i].piece = this.pieceArray[i];
     }
     this.cube.identity();
+  }
+
+  /**
+   * Attach a confetti emitter to be triggered when the cube is solved
+   * @param {ConfettiEmitter} emitter
+   */
+  setConfettiEmitter(emitter) {
+    this.confettiEmitter = emitter;
   }
 }
 

@@ -25,6 +25,8 @@ import { removeLoadingOverlay } from "./ui/loading.js";
 import { ParallaxState } from "./state/parallax.js";
 import { ParallaxSideBar } from "./ui/sidebar/parallax.js";
 import { ParallaxRenderer } from "./render/parallax.js";
+import { ConfettiRenderer } from "./render/confettiRenderer.js";
+import { ConfettiEmitter } from "./state/confetti.js";
 
 // Check and retrieve webgl rendering context
 const canvas = document.getElementById("canvas");
@@ -55,6 +57,7 @@ const ambientState = new AmbientState();
 const diffuseState = new DiffuseState();
 const specularState = new SpecularState();
 const parallaxState = new ParallaxState();
+const confettiEmitter = new ConfettiEmitter();
 
 const matrices = {
   perspectiveMatrix: canvasState.perspectiveMatrix,
@@ -76,6 +79,11 @@ new CubeSideBar(cube);
 // Load skybox
 const skyBox = new SkyBox(gl, skyboxDir, shaderDir);
 await skyBox.init();
+
+// Load confetti
+const confetti = new ConfettiRenderer(gl, shaderDir, confettiEmitter);
+await confetti.init();
+cube.setConfettiEmitter(confettiEmitter);
 
 // Load and compile shaders
 const vertexShaderStr = await fetchFile(`${shaderDir}main_vs.glsl`);
@@ -135,6 +143,8 @@ function drawFrame() {
   // Draw skybox if the ambient is skybox
   if (ambientState.type === "skybox")
     skyBox.renderSkyBox(matrices.perspectiveMatrix, cameraState);
+
+  confetti.renderConfetti(matrices);
 
   window.requestAnimationFrame(drawFrame);
 }
