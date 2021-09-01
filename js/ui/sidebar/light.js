@@ -275,8 +275,8 @@ export function LightSideBar(lightState) {
         spot.color.value = rgbToHex(currentOptions.color);
         spot.decay.value = currentOptions.decay;
         spot.target.value = currentOptions.target;
-        spot.coneOut = currentOptions.coneOut;
-        spot.coneIn = currentOptions.coneIn;
+        spot.coneOut.value = currentOptions.coneOut;
+        spot.coneIn.value = currentOptions.coneIn;
 
         toDispatch = [
           spot.x,
