@@ -1,6 +1,7 @@
 import { fetchFile, mathUtils, shaderUtils } from "./utils.js";
 import { initializeCube } from "./state/cube.js";
 import { MouseHandler } from "./ui/mouse.js";
+import { KeyboardHandler } from "./ui/keyboard.js";
 import { CameraState } from "./state/camera.js";
 import { SkyBox } from "./render/skybox.js";
 import "./lib/webgl-obj-loader.min.js";
@@ -68,6 +69,8 @@ const matrices = {
 new Window(canvasState);
 const mouseHandler = new MouseHandler(gl.canvas, cube, cameraState, matrices);
 mouseHandler.initInputEventListeners();
+const keyboardHandler = new KeyboardHandler(confettiEmitter);
+keyboardHandler.initInputEventListeners();
 new LightSideBar(lightState);
 new AmbientSideBar(ambientState);
 new DiffuseSideBar(diffuseState);
