@@ -16,6 +16,7 @@ html {
   float: right;
   background: paleturquoise;
   border-left: solid 1px black;
+  overflow-y: auto;
 }
 
 .sidebar-right > * {
