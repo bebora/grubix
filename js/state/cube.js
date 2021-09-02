@@ -292,7 +292,7 @@ class CubeState {
     this.facelets = [];
     this.cube = new Cube();
     this.solvedInitialized = false;
-    this.isScrambled = false;
+    this.isScrambled = false; // Keep track whether the cube has been scrambled to prevent excessive confetti
 
     this.transitionInProgress = false;
   }
@@ -322,7 +322,7 @@ class CubeState {
    * @param {number} angle optional angle to which rotate the face. Defaults to 0.
    * @returns {Promise<void>}
    */
-  async moveWithAnimation(faceName, inertia, anglePerMs = 5, angle = 0) {
+  async moveWithAnimation(faceName, inertia, anglePerMs = 3, angle = 0) {
     // First, face must be rotated to the nearest position
     let face = this.faces[faceName];
     let tempAngle = (face.tempAngle = face.tempAngle % 360);
@@ -552,13 +552,17 @@ class CubeState {
 
   async solve() {
     this.isScrambled = false;
+    if (this.isSolved()) {
+      // No need to freeze the interface for n seconds if the cube is already solved
+      return;
+    }
     if (!this.solvedInitialized) {
       Cube.initSolver();
       this.solvedInitialized = true;
     }
 
     let solution = this.cube.solve().split(" ");
-    await this.executeMoves(solution, 1);
+    await this.executeMoves(solution, 1.5);
   }
 
   reset() {
