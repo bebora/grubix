@@ -537,7 +537,7 @@ class CubeState {
     for (let move of moves) {
       let face = move.charAt(0);
       let angle = charsToDegree[move.charAt(1)];
-      await this.moveWithAnimation(face, false, anglePerMs, angle);
+      await this.moveWithAnimation(face, 0, anglePerMs, angle);
     }
   }
 

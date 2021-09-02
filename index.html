@@ -19,6 +19,8 @@
         </select>
         <button id="add-light">+</button>
         <button id="remove-light">-</button>
+        <br>
+        <label for="light-type">Light type</label>
         <select id="light-type">
           <option value="direct" selected>Direct</option>
           <option value="point">Point</option>
@@ -69,10 +71,10 @@
           <label for="light-spot-z">Position z</label>
           <input type="range" min="-60" max="60" value="30" id="light-spot-z">
           <br>
-          <label for="light-direct-azimuth">Azimuth direction</label>
+          <label for="light-spot-azimuth">Azimuth direction</label>
           <input type="range" min="-180" max="180" value="0" id="light-spot-azimuth">
           <br>
-          <label for="light-direct-elevation">Elevation direction</label>
+          <label for="light-spot-elevation">Elevation direction</label>
           <input type="range" min="0" max="180" value="90" id="light-spot-elevation">
           <br>
           <label for="light-spot-color">Color</label>
@@ -140,7 +142,7 @@
         </div>
       </div>
       <div id="specular" class="option-container">
-        <label for=" specular-select">Specular type</label>
+        <label for="specular-select">Specular type</label>
         <select id="specular-select">
           <option value="phong" selected>Phong</option>
           <option value="blinn">Blinn</option>

@@ -138,7 +138,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
         let diffVect = [dx, dy];
 
         if (lockedDir == null) {
-          // There is no locked direction, then the mouse movement will possibily lock one
+          // There is no locked direction, then the mouse movement will possibly lock one
           let [faceName1, worldDir1] = Object.entries(
             activeFacelet.directions
           )[0];
@@ -287,7 +287,7 @@ const MouseHandler = function (canvas, cube, cameraState, matrices) {
       0.0,
     ];
 
-    //We find the direction expressed in world coordinates by multipling with the inverse of the view matrix
+    //We find the direction expressed in world coordinates by multiplying with the inverse of the view matrix
     let rayDir = mathUtils.multiplyMatrixVector(viewInv, rayEyeCoords);
     return mathUtils.normaliseVector3(rayDir);
   }
