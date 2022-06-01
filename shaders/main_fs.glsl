@@ -74,6 +74,7 @@ uniform SpecularInfo specular;
 uniform ParallaxInfo parallax;
 uniform PbrInfo pbr;
 uniform mat4 transposeViewMatrix;
+uniform float u_depthImageAspectRatio;
 
 in vec2 fs_textureCoord;
 in vec3 fs_tangent;
@@ -317,6 +318,8 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
   float currentLayerDepth = 0.0;
   // The amount to shift the texture coordinates per layer (from vector P)
   vec2 P = viewDir.xy / viewDir.z * parallax.scale;
+  // Rescale y displacement to account for non squared textures
+  P = vec2(P.x, P.y * u_depthImageAspectRatio);
   vec2 deltaTexCoords = P / numLayers;
 
   // Get initial values

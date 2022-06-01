@@ -200,6 +200,15 @@ export function CubeRenderer(cube, gl, program, textureDir) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.generateMipmap(gl.TEXTURE_2D);
 
+    var depthImageAspectRatioLocation = gl.getUniformLocation(
+      program,
+      "u_depthImageAspectRatio"
+    );
+    gl.uniform1f(
+      depthImageAspectRatioLocation,
+      depthImage.width / depthImage.height
+    );
+
     removeLoadingInfo("depthmap");
   };
 
